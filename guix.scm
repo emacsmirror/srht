@@ -23,7 +23,10 @@
              (guix git-download)
              (guix build-system emacs)
              ((guix licenses) #:prefix license:)
-             (gnu packages emacs))
+             (gnu packages emacs)
+             (ice-9 receive)
+             (ice-9 popen)
+             (ice-9 rdelim))
 
 (define-public emacs-plz
   (let ((commit "1d3efc036c9fdb7242499575e4d6bdcc928b0539")
@@ -48,14 +51,22 @@
       (description #f)
       (license license:gpl3+))))
 
+(define (last-commit-hash)
+  (receive (in out pids)
+      (pipeline `(("git" "rev-parse" "HEAD")))
+    (let ((val (read-line in)))
+      (close in)
+      (close out)
+      val)))
+
 (define-public emacs-srht
-  (let ((commit "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+  (let ((commit (last-commit-hash))
         (revision "0")
         (version "0.1.0"))
     (package
       (name "emacs-srht")
       (version (git-version version revision commit))
-      (source (local-file "" #:recursive? #t))
+      (source (local-file "./lisp" #:recursive? #t))
       (build-system emacs-build-system)
       (arguments (list #:emacs emacs-next))
       (propagated-inputs (list emacs-plz))
