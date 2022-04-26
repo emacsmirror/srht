@@ -23,7 +23,7 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;; comment
+;; https://man.sr.ht/api-conventions.md
 ;;
 
 ;;; Code:
@@ -95,6 +95,7 @@ narrowed to the response body."
         (json-array-type 'list))
     (json-read)))
 
+;; TODO add body-type to use with `multipart/from-data'
 (cl-defun srht--api-request (method &key service path query
                                     body (else #'srht--else)
                                     form (then 'sync) (as #'srht--as)
@@ -119,7 +120,7 @@ THEN is a callback function, which is called in the response data.
 ELSE is an optional callback function called when the request
 fails with one argument, a `plz-error' struct."
   (let ((uri (srht--make-uri service path query))
-        (content-type (if form "multipart-form-data" "application/json")))
+        (content-type (if form "multipart/form-data" "application/json")))
     (plz method uri
       :headers `(,(cons "Content-Type" content-type)
                  ,(cons "Authorization" (concat "token " srht-token)))
