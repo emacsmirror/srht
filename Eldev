@@ -5,4 +5,7 @@
 ;(eldev-use-package-archive 'nongnu)
 ;(eldev-use-package-archive 'melpa)
 
-(eldev-use-plugin 'autoloads)
+;; (eldev-use-plugin 'autoloads)
+;; (file-name-directory (find-library-name "plz"))
+(setq eldev-project-main-file "lisp/srht.el")
+(eldev-use-local-dependency "/gnu/store/r48pqszz01hvph933i7k5m2h0cwh0wpz-emacs-rrr-plz-0.1-pre-2.1d3efc0/share/emacs/site-lisp/rrr-plz-0.1-pre-2.1d3efc0/")
