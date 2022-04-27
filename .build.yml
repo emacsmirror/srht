@@ -3,6 +3,7 @@ packages:
   - make
   - emacs-next
   - emacs-eldev
+  - emacs-plz
 sources:
   - https://git.sr.ht/~akagi/srht.el
 tasks:
