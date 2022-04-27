@@ -1,0 +1,11 @@
+image: guix
+packages:
+  - make
+  - emacs
+  - emacs-eldev
+sources:
+  - https://git.sr.ht/~akagi/srht.el
+tasks:
+  - check: |
+      cd srht.el
+      make test
