@@ -103,9 +103,25 @@ the whole buffer."
       (buffer-substring-no-properties (region-beginning) (region-end))
     (buffer-string)))
 
+(defalias 'srht-paste-file-name-concat
+  (if (fboundp 'file-name-concat)
+      #'file-name-concat
+    (lambda (directory &rest components)
+      (let ((components (cl-remove-if (lambda (el)
+                                        (or (null el) (equal "" el)))
+                                      components))
+            file-name-handler-alist)
+        (if (null components)
+            directory
+          (apply #'srht-paste-file-name-concat
+                 (concat (unless (or (equal "" directory) (null directory))
+                           (file-name-as-directory directory))
+                         (car components))
+                 (cdr components)))))))
+
 (defun srht-paste--kill-link (name sha)
   "Make URL constructed from NAME and SHA the latest kill in the kill ring."
-  (kill-new (file-name-concat (srht--make-uri 'paste nil nil) name sha))
+  (kill-new (srht-paste-file-name-concat (srht--make-uri 'paste nil nil) name sha))
   (message "Paste URL in kill-ring"))
 
 (defun srht-paste--else (plz-error)

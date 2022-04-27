@@ -7,7 +7,7 @@
 ;; Package-Version: 0.1.0
 ;; Homepage: https://sr.ht/~akagi/srht.el/
 ;; Keywords: comm
-;; Package-Requires: ((emacs "28.1") (plz "0.1-pre"))
+;; Package-Requires: ((emacs "27.1") (plz "0.1-pre"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by

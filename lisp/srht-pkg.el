@@ -3,7 +3,7 @@
   "srht"
   "0.1.0"
   "Sourcehut"
-  '((emacs "28.1") (plz "0.1-pre"))
+  '((emacs "27.1") (plz "0.1-pre"))
   :authors '(("Aleksandr Vityazev" . "avityazev@posteo.org"))
   :maintainer '("Aleksandr Vityazev" . "avityazev@posteo.org")
   :keywords '("comm"))
