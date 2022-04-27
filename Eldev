@@ -7,5 +7,5 @@
 
 ;; (eldev-use-plugin 'autoloads)
 ;; (file-name-directory (find-library-name "plz"))
-(setq eldev-project-main-file "lisp/srht.el")
+(setq eldev-project-main-file "./lisp/srht.el")
 (eldev-use-local-dependency "./external/" 'source)
