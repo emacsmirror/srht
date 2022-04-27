@@ -1,7 +1,7 @@
 image: guix
 packages:
   - make
-  - emacs
+  - emacs-next
   - emacs-eldev
 sources:
   - https://git.sr.ht/~akagi/srht.el
