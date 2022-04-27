@@ -9,4 +9,5 @@
 ;; (file-name-directory (find-library-name "plz"))
 (add-to-list 'load-path "./lisp/")
 (setq eldev-project-main-file "./lisp/srht.el")
+;; FIXME: outdated version, not support 'delete method
 (eldev-use-local-dependency "/gnu/store/amblp4x1r03xkzjda8hjha6bj1p5p8ms-emacs-plz-0.1-pre-1.7e45663/share/emacs/site-lisp/plz-0.1-pre-1.7e45663/")
