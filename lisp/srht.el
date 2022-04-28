@@ -109,8 +109,7 @@ request.
 
 PATH is the path for the URI and QUERY is the query for the URI.
 
-If FORM is non nil, the content type used will be
-`multipart/from-data' instead of `application/json'.
+If FORM is nil, the content type used will be `application/json'.
 
 BODY is the body sent to the URI.
 
@@ -119,8 +118,10 @@ THEN (see `plz').
 THEN is a callback function, which is called in the response data.
 ELSE is an optional callback function called when the request
 fails with one argument, a `plz-error' struct."
+  (unless srht-token
+    (error "Need a token"))
   (let ((uri (srht--make-uri service path query))
-        (content-type (if form "multipart/form-data" "application/json")))
+        (content-type (or form "application/json")))
     (plz method uri
       :headers `(,(cons "Content-Type" content-type)
                  ,(cons "Authorization" (concat "token " srht-token)))
@@ -136,7 +137,7 @@ BODY is optional, if it is an empty list, the resulting list will not
 contain the body at all.  FORM is optional."
   (let ((crud `(:service ,service :path ,path :form ,form)))
     (if body
-        (append crud `(:body ,(json-encode body)))
+        (append crud `(:body ,(if form body (json-encode body))))
       crud)))
 
 (defun srht--make-crud-request (method args)

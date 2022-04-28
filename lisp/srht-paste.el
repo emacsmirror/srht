@@ -36,6 +36,7 @@ PATH is the path for the URI.  BODY is the body sent to the URI."
 VISIBILITY must be one of \"public\", \"private\", or \"unlisted\".
 FILENAME string or null by default.
 CONTENTS must be a UTF-8 encoded string; binary files are not allowed."
+  (cl-assert (member visibility '("unlisted" "public" "private")))
   `((visibility . ,visibility)
     (files . [((filename . ,filename)
                (contents . ,contents))])))
@@ -93,7 +94,7 @@ specify the DETAILS (see `srht-paste-make') of the paste."
    ((stringp sha)
     (srht-paste--make-crud (format "/api/pastes/%s" sha)))
    ((stringp (plist-get details :contents))
-    (apply #'srht-paste-make details))))
+    (srht-paste--make-crud "/api/pastes" (apply #'srht-paste-make details)))))
 
 (defun srht-paste--get-content ()
   "Extract the content we want to paste.
@@ -156,9 +157,7 @@ Called when the request fails with one argument, a ‘plz-error’ struct PLZ-ER
 		      nil nil (buffer-name))))
   (let ((content (srht-paste--get-content)))
     (srht-create
-     (srht-paste--make-crud
-      "/api/pastes"
-      (srht-paste nil :visibility visibility :filename filename :contents content))
+     (srht-paste nil :visibility visibility :filename filename :contents content)
      :then (lambda (_resp))
      :else #'srht-paste--else)))
 
