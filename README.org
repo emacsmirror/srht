@@ -3,3 +3,22 @@
 
 * About
 GNU Emacs [[https://sr.ht][sourcehut]] API client.
+
+* Setup
+
+To use this client, you need to [[https://meta.sr.ht/oauth/personal-token][generate]] a personal access token. This token
+will have unrestricted access to all sr.ht APIs and can be used like a normal
+access token to authenticate API requests.
+
+After creating the token:
+
+#+begin_src elisp :lexical t
+(setq srht-token TOKEN)
+#+end_src
+
+It is also possible to store the token using `auth-source.el', the host must be
+set to paste.sr.ht.
+
+#+begin_example
+machine paste.sr.ht password TOKEN
+#+end_example
