@@ -181,7 +181,7 @@ is assumed."
     (concat bb (format "%s%s%s" v sb c))))
 
 (defun srht-git--repo-name-read ()
-  ""
+  "Read a repository name in the minibuffer, with completion."
   (srht-read-with-annotaion "Select repository: "
     (srht-git--candidates) #'srht-git--annot))
 
