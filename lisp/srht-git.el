@@ -222,21 +222,34 @@ Called when the request fails with one argument, a ‘plz-error’ struct PLZ-ER
                               :description description)
                :else #'srht-git--else))
 
+
+(defun srht-git--find-info (repo-name)
+  "Find repository information by REPO-NAME."
+  (catch 'found
+    (seq-doseq (repo (plist-get srht-git-repos :results))
+      (when (equal (cl-getf repo :name) repo-name)
+        (throw 'found repo)))))
+
+
 ;;;###autoload
-(defun srht-git-repo-update (repo-name visibility name description)
+(defun srht-git-repo-update (repo-name visibility new-name description)
   "Update repository REPO-NAME.
-Set VISIBILITY, NAME and DESCRIPTION."
+Set VISIBILITY, NEW-NAME and DESCRIPTION."
   (interactive
-   (list (srht-git--repo-name-read)
-         (completing-read "Visibility: "
-			  '("private" "public" "unlisted") nil t)
-         (read-string "Repository name: " nil
-                      'srht-git-repo-name-history)
-         (read-string "Repository description (markdown): ")))
+   (pcase-let* ((name (srht-git--repo-name-read))
+                ((map (:visibility v)
+                      (:description d))
+                 (srht-git--find-info name)))
+     (list name
+           (completing-read "Visibility: "
+			    '("private" "public" "unlisted") nil t v)
+           (read-string "Repository name: " name
+                        'srht-git-repo-name-history )
+           (read-string "Repository description (markdown): " d))))
   (when (yes-or-no-p (format "Update %s repository?" repo-name))
     (srht-update (srht-git-repo repo-name nil
                                 :visibility visibility
-                                :name name
+                                :name new-name
                                 :description description)
                  :then (lambda (_resp)
                          ;; NOTE: resp examle
