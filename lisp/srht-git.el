@@ -222,14 +222,12 @@ Called when the request fails with one argument, a ‘plz-error’ struct PLZ-ER
                               :description description)
                :else #'srht-git--else))
 
-
 (defun srht-git--find-info (repo-name)
   "Find repository information by REPO-NAME."
   (catch 'found
     (seq-doseq (repo (plist-get srht-git-repos :results))
       (when (equal (cl-getf repo :name) repo-name)
         (throw 'found repo)))))
-
 
 ;;;###autoload
 (defun srht-git-repo-update (repo-name visibility new-name description)
@@ -243,14 +241,15 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
      (list name
            (completing-read "Visibility: "
 			    '("private" "public" "unlisted") nil t v)
-           (read-string "Repository name: " name
-                        'srht-git-repo-name-history )
+           (read-string "Repository name: " nil
+                        'srht-git-repo-name-history)
            (read-string "Repository description (markdown): " d))))
   (when (yes-or-no-p (format "Update %s repository?" repo-name))
     (srht-update (srht-git-repo repo-name nil
                                 :visibility visibility
                                 :name new-name
                                 :description description)
+                 :else #'srht-git--else
                  :then (lambda (_resp)
                          ;; NOTE: resp examle
                          ;; (:id 110277
