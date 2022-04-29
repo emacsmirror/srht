@@ -160,19 +160,22 @@ contain the body at all.  FORM is optional."
   "Create an API request with ARGS using the DELETE method."
   (srht--make-crud-request 'delete args))
 
-(defun srht-read-with-annotaion (prompt candidates annot-function)
-  "TODO: doc"
+(defun srht-read-with-annotaion (prompt collection annot-function)
+  "Read a string in the minibuffer, with completion.
+PROMPT is a string to prompt with; normally it ends in a colon and a space.
+COLLECTION can be a list of strings, an alist or a hash table.
+ANNOT-FUNCTION the value should be a function for “annotating” completions.
+The function should take one argument, STRING, which is a possible completion."
   (declare (indent 1))
-  (let* ((p candidates)
-         (table
-          (lambda (string pred action)
-            (if (eq action 'metadata)
-                `(metadata
-                  (annotation-function . ,annot-function)
-                  (cycle-sort-function . identity)
-                  (display-sort-function . identity))
-              (complete-with-action action p string pred)))))
-    (car (last (assoc (completing-read prompt table) p)))))
+  (let ((table
+         (lambda (string pred action)
+           (if (eq action 'metadata)
+               `(metadata
+                 (annotation-function . ,annot-function)
+                 (cycle-sort-function . identity)
+                 (display-sort-function . identity))
+             (complete-with-action action collection string pred)))))
+    (completing-read prompt table)))
 
 (defalias 'srht-file-name-concat
   (if (fboundp 'file-name-concat)
@@ -191,8 +194,8 @@ contain the body at all.  FORM is optional."
                  (cdr components)))))))
 
 (defun srht-kill-link (service name resource)
-  "TODO: update.
-Make URL constructed from NAME and SHA the latest kill in the kill ring."
+  "Make URL the latest kill in the kill ring.
+Constructed from SERVICE, NAME and RESOURCE."
   (kill-new (srht-file-name-concat (srht--make-uri service nil nil) name resource))
   (message "URL in kill-ring"))
 

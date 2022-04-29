@@ -163,7 +163,7 @@ is assumed."
   (seq-map (pcase-lambda ((map (:created c)
                                (:visibility v)
                                (:name n)))
-             (list n c v n))
+             (list n c v))
            (plist-get (or srht-git-repos
                           (setq srht-git-repos
                                 (srht-retrive (srht-git-repos))))

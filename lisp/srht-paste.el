@@ -71,8 +71,10 @@ CONTENTS must be a UTF-8 encoded string; binary files are not allowed."
 
 (defun srht-paste--sha ()
   "Read a FILENAME in the minibuffer, with completion and return SHA."
-  (srht-read-with-annotaion "Select paste: "
-    (srht-paste--candidates) #'srht-paste--annot))
+  (let ((cand (srht-paste--candidates)))
+    (car (last (assoc (srht-read-with-annotaion
+                          "Select paste: " cand #'srht-paste--annot)
+                      cand)))))
 
 (defun srht-paste (&optional sha &rest details)
   "Create, retrieve or delete a paste.
