@@ -39,6 +39,15 @@
   (pcase-let (((map (:path name)) (srht-git-repo "srht.el")))
     (should (equal "/api/repos/srht.el" name))))
 
+;; (srht-retrive (srht-git-user "~akagi"))
+;; (srht-retrive (srht-git-user "~sircmpwn"))
+
+;; (setq akagi-repos-test (srht-retrive (srht-git-repos)))
+
+;; (srht-git-make :visibility "ulnlisted" :name "test-repo" :description "hi")
+;; (srht-git-make :visibility "ulnlisted" :description "hi")
+;; (json-encode (srht-git-make :visibility "unlisted" :name "test-repo" :description "hi"))
+
 ;; (srht-retrive (srht-git-repo "srht.el"))
 ;; (srht-retrive (srht-git-repo "rrr" "~akagi"))
 ;; (srht-git-repo nil "~akagi" :visibility "ulnlisted" :name "test-repo" :description "hi")

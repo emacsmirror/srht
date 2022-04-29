@@ -71,16 +71,8 @@ CONTENTS must be a UTF-8 encoded string; binary files are not allowed."
 
 (defun srht-paste--sha ()
   "Read a FILENAME in the minibuffer, with completion and return SHA."
-  (let* ((p (srht-paste--candidates))
-         (table
-          (lambda (string pred action)
-            (if (eq action 'metadata)
-                `(metadata
-                  (annotation-function . srht-paste--annot)
-                  (cycle-sort-function . identity)
-                  (display-sort-function . identity))
-              (complete-with-action action p string pred)))))
-    (car (last (assoc (completing-read "Select paste: " table) p)))))
+  (srht-read-with-annotaion "Select paste: "
+    (srht-paste--candidates) #'srht-paste--annot))
 
 (defun srht-paste (&optional sha &rest details)
   "Create, retrieve or delete a paste.
@@ -104,40 +96,16 @@ the whole buffer."
       (buffer-substring-no-properties (region-beginning) (region-end))
     (buffer-string)))
 
-(defalias 'srht-paste-file-name-concat
-  (if (fboundp 'file-name-concat)
-      #'file-name-concat
-    (lambda (directory &rest components)
-      (let ((components (cl-remove-if (lambda (el)
-                                        (or (null el) (equal "" el)))
-                                      components))
-            file-name-handler-alist)
-        (if (null components)
-            directory
-          (apply #'srht-paste-file-name-concat
-                 (concat (unless (or (equal "" directory) (null directory))
-                           (file-name-as-directory directory))
-                         (car components))
-                 (cdr components)))))))
-
-(defun srht-paste--kill-link (name sha)
-  "Make URL constructed from NAME and SHA the latest kill in the kill ring."
-  (kill-new (srht-paste-file-name-concat (srht--make-uri 'paste nil nil) name sha))
-  (message "Paste URL in kill-ring"))
-
 (defun srht-paste--else (plz-error)
   "An optional callback function.
 Called when the request fails with one argument, a ‘plz-error’ struct PLZ-ERROR."
   (pcase-let* (((cl-struct plz-error response) plz-error)
                ((cl-struct plz-response status body) response))
     (pcase status
-      (201 (pcase-let* ((json-object-type 'plist)
-                        (json-key-type 'keyword)
-                        (json-array-type 'list)
-                        ((map (:sha sha)
-                              (:user (map (:canonical_name name))))
-                         (json-read-from-string body)))
-             (srht-paste--kill-link name sha)
+      (201 (srht-with-json-read-from-string body
+             (map (:sha sha)
+                  (:user (map (:canonical_name name))))
+             (srht-kill-link 'paste name sha)
              (srht-retrive (srht-pastes)
                            :then (lambda (resp)
                                    (setq srht-paste-all-pastes resp)))))
@@ -175,7 +143,7 @@ Called when the request fails with one argument, a ‘plz-error’ struct PLZ-ER
 (defun srht-paste-link (user)
   "Kill the link of the selected paste owned by the USER."
   (interactive (list (read-string "User: ")))
-  (srht-paste--kill-link user (srht-paste--sha)))
+  (srht-kill-link 'paste user (srht-paste--sha)))
 
 (provide 'srht-paste)
 ;;; srht-paste.el ends here

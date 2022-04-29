@@ -25,6 +25,9 @@
 
 (require 'srht)
 
+(defvar srht-git-repos nil
+  "Authenticated user repos.")
+
 (defun srht-git--make-crud (path &optional body form)
   "Make crud for git service.
 PATH is the path for the URI.  BODY is the body sent to the URI.
@@ -40,9 +43,6 @@ If USERNAME is nil, the authenticated user is assumed."
                 "/api/user")))
     (srht-git--make-crud path)))
 
-;; (srht-retrive (srht-git-user "~akagi"))
-;; (srht-retrive (srht-git-user "~sircmpwn"))
-
 (defun srht-git-repos (&optional username)
   "Retrive list of repository resources owned by this USERNAME.
 If USERNAME is nil the authenticated user is assumed."
@@ -51,22 +51,16 @@ If USERNAME is nil the authenticated user is assumed."
                 "/api/repos")))
     (srht-git--make-crud path)))
 
-;; (setq akagi-repos-test (srht-retrive (srht-git-repos)))
-
-(cl-defun srht-git-make (&key (visibility "unlisted") description name)
+(cl-defun srht-git-make (&key visibility description name)
   "Make paste parameters.
 VISIBILITY must be one of \"public\", \"private\", or \"unlisted\".
 DESCRIPTION is repository description, markdown is allowed.
 NAME is repository name."
-  (cl-assert (or (member visibility '("unlisted" "public" "private"))
-                 (not (null name))))
+  (cl-assert (and (member visibility '("unlisted" "public" "private"))
+                  (not (null name))))
   `((name . ,name)
     (description . ,description)
     (visibility . ,visibility)))
-
-;; (srht-git-make :visibility "ulnlisted" :name "test-repo" :description "hi")
-;; (srht-git-make :visibility "ulnlisted" :description "hi")
-;; (json-encode (srht-git-make :visibility "unlisted" :name "test-repo" :description "hi"))
 
 (defun srht-git-repo (repo-name &optional username &rest details)
   "Create, retrieve, delete or update a git repository.
@@ -76,7 +70,7 @@ the name of an existing repository.
 
 When retrieving if USERNAME is nil the authenticated user is assumed.
 
-When updating DETAILS, you must specify DETAILS (see `srht-git-make').
+When updating, you must specify DETAILS (see `srht-git-make').
 ;; NOTE: Updating the name will create a redirect.
 
 When creating repository omit REPO-NAME and specify DETAILS
@@ -84,6 +78,9 @@ When creating repository omit REPO-NAME and specify DETAILS
   (cond
    ((and (stringp repo-name) (stringp username))
     (srht-git--make-crud (format "/api/%s/repos/%s" username repo-name)))
+   ((and (stringp repo-name) details)
+    (srht-git--make-crud (format "/api/repos/%s" repo-name)
+                         (apply #'srht-git-make details)))
    ((stringp repo-name) (srht-git--make-crud (format "/api/repos/%s" repo-name)))
    (t (srht-git--make-crud "/api/repos" (apply #'srht-git-make details)))))
 
@@ -160,6 +157,107 @@ is assumed."
 NAME is a repository name.  If USERNAME is nil the authenticated user
 is assumed."
   (srht-git--endpoints "tree" name username))
+
+(defun srht-git--candidates ()
+  "Return completion candidates."
+  (seq-map (pcase-lambda ((map (:created c)
+                               (:visibility v)
+                               (:name n)))
+             (list n c v n))
+           (plist-get (or srht-git-repos
+                          (setq srht-git-repos
+                                (srht-retrive (srht-git-repos))))
+                      :results)))
+
+(defun srht-git--annot (str)
+  "Function to add annotations in the completions buffer for STR."
+  (pcase-let* (((seq _n c v) (assoc str (srht-git--candidates)))
+               (l (- 40 (length (substring-no-properties str))))
+               (bb (make-string l (string-to-char " ")))
+               (sb (cond
+                    ((string= v "public") "      ")
+                    ((string= v "private") "     ")
+                    ((string= v "unlisted") "    "))))
+    (concat bb (format "%s%s%s" v sb c))))
+
+(defun srht-git--repo-name-read ()
+  ""
+  (srht-read-with-annotaion "Select repository: "
+    (srht-git--candidates) #'srht-git--annot))
+
+(defvar srht-git-repo-name-history nil
+  "History variable.")
+
+(defun srht-git--else (plz-error)
+  "An optional callback function.
+Called when the request fails with one argument, a ‘plz-error’ struct PLZ-ERROR."
+  (pcase-let* (((cl-struct plz-error response) plz-error)
+               ((cl-struct plz-response status body) response))
+    (pcase status
+      (201 (srht-with-json-read-from-string body
+             (map (:name repo-name)
+                  (:owner (map (:canonical_name username))))
+             (srht-kill-link 'git username repo-name)
+             (srht-retrive (srht-git-repos)
+                           :then (lambda (resp)
+                                   (setq srht-git-repos resp)))))
+      (204 (srht-retrive (srht-git-repos)
+                         :then (lambda (resp)
+                                 (setq srht-git-repos resp)
+                                 (message "Deleted!"))))
+      (_ (error "Unkown error with status %s: %S" status plz-error)))))
+
+;;;###autoload
+(defun srht-git-repo-create (visibility name description)
+  "Create repository NAME with selected VISIBILITY  and DESCRIPTION."
+  (interactive
+   (list (completing-read "Visibility: "
+			  '("private" "public" "unlisted") nil t)
+	 (read-string "New git repository name: " nil
+                      'srht-git-repo-name-history)
+         (read-string "Repository description (markdown): ")))
+  (srht-create (srht-git-repo nil nil
+                              :visibility visibility
+                              :name name
+                              :description description)
+               :else #'srht-git--else))
+
+;;;###autoload
+(defun srht-git-repo-update (repo-name visibility name description)
+  "Update repository REPO-NAME.
+Set VISIBILITY, NAME and DESCRIPTION."
+  (interactive
+   (list (srht-git--repo-name-read)
+         (completing-read "Visibility: "
+			  '("private" "public" "unlisted") nil t)
+         (read-string "Repository name: " nil
+                      'srht-git-repo-name-history)
+         (read-string "Repository description (markdown): ")))
+  (when (yes-or-no-p (format "Update %s repository?" repo-name))
+    (srht-update (srht-git-repo repo-name nil
+                                :visibility visibility
+                                :name name
+                                :description description)
+                 :then (lambda (_resp)
+                         ;; NOTE: resp examle
+                         ;; (:id 110277
+                         ;;  :created 2022-04-29T14:05:29.662497Z
+                         ;;  :updated 2022-04-29T14:43:53.155504Z
+                         ;;  :name test-from-srht-6.el
+                         ;;  :owner (:canonical_name ~akagi :name akagi)
+                         ;;  :description nil
+                         ;;  :visibility unlisted)
+                         (srht-retrive (srht-git-repos)
+                                       :then (lambda (resp)
+                                               (setq srht-git-repos resp)))))))
+
+;;;###autoload
+(defun srht-git-repo-delete (name)
+  "Delete NAME repository."
+  (interactive (list (srht-git--repo-name-read)))
+  (when (yes-or-no-p
+         (format "This action cannot be undone.\n Delete %s repository?" name))
+    (srht-delete (srht-git-repo name) :else #'srht-git--else)))
 
 (provide 'srht-git)
 ;;; srht-git.el ends here

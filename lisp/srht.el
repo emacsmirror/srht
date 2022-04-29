@@ -160,5 +160,50 @@ contain the body at all.  FORM is optional."
   "Create an API request with ARGS using the DELETE method."
   (srht--make-crud-request 'delete args))
 
+(defun srht-read-with-annotaion (prompt candidates annot-function)
+  "TODO: doc"
+  (declare (indent 1))
+  (let* ((p candidates)
+         (table
+          (lambda (string pred action)
+            (if (eq action 'metadata)
+                `(metadata
+                  (annotation-function . ,annot-function)
+                  (cycle-sort-function . identity)
+                  (display-sort-function . identity))
+              (complete-with-action action p string pred)))))
+    (car (last (assoc (completing-read prompt table) p)))))
+
+(defalias 'srht-file-name-concat
+  (if (fboundp 'file-name-concat)
+      #'file-name-concat
+    (lambda (directory &rest components)
+      (let ((components (cl-remove-if (lambda (el)
+                                        (or (null el) (equal "" el)))
+                                      components))
+            file-name-handler-alist)
+        (if (null components)
+            directory
+          (apply #'srht-file-name-concat
+                 (concat (unless (or (equal "" directory) (null directory))
+                           (file-name-as-directory directory))
+                         (car components))
+                 (cdr components)))))))
+
+(defun srht-kill-link (service name resource)
+  "TODO: update.
+Make URL constructed from NAME and SHA the latest kill in the kill ring."
+  (kill-new (srht-file-name-concat (srht--make-uri service nil nil) name resource))
+  (message "URL in kill-ring"))
+
+(defmacro srht-with-json-read-from-string (string matching-pattern &rest body)
+  "TODO: doc."
+  (declare (indent 1))
+  `(pcase-let* ((json-object-type 'plist)
+                (json-key-type 'keyword)
+                (json-array-type 'list)
+                (,matching-pattern (json-read-from-string ,string)))
+     ,@body))
+
 (provide 'srht)
 ;;; srht.el ends here
