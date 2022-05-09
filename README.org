@@ -1,4 +1,6 @@
 #+OPTIONS: toc:nil
+
+#+html: <a href="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml"><img alt="Build" src="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml.svg"/></a>
 *** Version 0.1.0
 
 * About
@@ -22,3 +24,7 @@ set to paste.sr.ht.
 #+begin_example
 machine paste.sr.ht password TOKEN
 #+end_example
+
+* License
+
+GPLv3

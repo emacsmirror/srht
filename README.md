@@ -1,3 +1,4 @@
+<a href="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml"><img alt="Build" src="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml.svg"/></a>
 
 
 ### Version 0.1.0
@@ -22,3 +23,8 @@ It is also possible to store the token using auth-source.el, the host must be
 set to paste.sr.ht.
 
     machine paste.sr.ht password TOKEN
+
+
+# License
+
+GPLv3
