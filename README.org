@@ -1,10 +1,15 @@
 #+OPTIONS: toc:nil
 
 #+html: <a href="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml"><img alt="Build" src="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml.svg"/></a>
-*** Version 0.1.0
+*** Version 0.1
 
 * About
+
 GNU Emacs [[https://sr.ht][sourcehut]] API client.
+
+=srht= provides bindings to the Sourcehut REST API as well as commands for
+interacting with it. It currently supports two services: =git.sr.ht= — git
+hosting and =paste.sr.ht= — ad-hoc text file hosting.
 
 * Installation
 
@@ -18,8 +23,8 @@ guix package -f guix.scm
 
 ** Manual
 
-~srht~ depends on the HTTP library ~plz~ which is available in ELPA. After
-installing it, place files from /lisp folder in ~load-path~.
+=srht= depends on the HTTP library =plz= which is available in ELPA. After
+installing it, place files from /lisp folder in =load-path=.
 
 * Setup
 
@@ -44,6 +49,12 @@ You also need to set srht-username:
 
 #+begin_src elisp :lexical t
 (setq srht-username USERNAME)
+#+end_src
+
+If you are using a self-hosted instanse:
+
+#+begin_src elisp :lexical t
+(setq srht-domain DOMAIN)
 #+end_src
 
 * Commands

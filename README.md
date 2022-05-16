@@ -1,12 +1,16 @@
 <a href="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml"><img alt="Build" src="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml.svg"/></a>
 
 
-### Version 0.1.0
+### Version 0.1
 
 
 # About
 
 GNU Emacs [sourcehut](https://sr.ht) API client.
+
+`srht` provides bindings to the Sourcehut REST API as well as commands for
+interacting with it. It currently supports two services: `git.sr.ht` — git
+hosting and `paste.sr.ht` — ad-hoc text file hosting.
 
 
 # Installation
@@ -43,6 +47,10 @@ set to sr.ht.
 You also need to set srht-username:
 
     (setq srht-username USERNAME)
+
+If you are using a self-hosted instanse:
+
+    (setq srht-domain DOMAIN)
 
 
 # Commands
