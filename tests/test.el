@@ -34,6 +34,7 @@
   (should (equal (srht-paste "489fa091d5c6d5751769375a6f0e00447347adff")
                  '(:service paste
                    :path "/api/pastes/489fa091d5c6d5751769375a6f0e00447347adff"
+                   :query nil
                    :form nil))))
 
 (ert-deftest srht-git-repo-retrive ()
