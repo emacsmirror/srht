@@ -1,8 +1,10 @@
 ;;; srht-git.el --- Sourcehut git                    -*- lexical-binding: t; -*-
 
-;; Copyright © 2022 Aleksandr Vityazev <avityazev@posteo.org>
+;; Copyright © 2022  Free Software Foundation, Inc.
 
 ;; Created: <2022-04-26 Tue>
+
+;; This file is part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -37,9 +39,8 @@ FORM is a content type."
 (defun srht-git-user (&optional username)
   "Retrieves a user resource.
 If USERNAME is nil, the authenticated user is assumed."
-  ;; TODO: tilda in username
   (let ((path (if username
-                  (concat "/api/user/" username)
+                  (concat "/api/user/~" (string-trim-left username "~"))
                 "/api/user")))
     (srht-git--make-crud path)))
 
@@ -47,7 +48,7 @@ If USERNAME is nil, the authenticated user is assumed."
   "Retrive list of repository resources owned by this USERNAME.
 If USERNAME is nil the authenticated user is assumed."
   (let ((path (if username
-                  (format "/api/%s/repos" username)
+                  (format "/api/~%s/repos" (string-trim-left username "~"))
                 "/api/repos")))
     (srht-git--make-crud path)))
 
@@ -77,54 +78,58 @@ When creating repository omit REPO-NAME and specify DETAILS
 \(see `srht-git-make'\)."
   (cond
    ((and (stringp repo-name) (stringp username))
-    (srht-git--make-crud (format "/api/%s/repos/%s" username repo-name)))
+    (srht-git--make-crud
+     (format "/api/~%s/repos/%s" (string-trim-left username "~") repo-name)))
    ((and (stringp repo-name) details)
     (srht-git--make-crud (format "/api/repos/%s" repo-name)
                          (apply #'srht-git-make details)))
    ((stringp repo-name) (srht-git--make-crud (format "/api/repos/%s" repo-name)))
    (t (srht-git--make-crud "/api/repos" (apply #'srht-git-make details)))))
 
-(defmacro srht-git--endpoints (endpoint name username &optional body form)
+(defmacro srht-git--endpoint (endpoint name username &optional body form)
   "Generate crud for ENDPOINT and repository NAME.
 If USERNAME is nil the authenticated user is assumed.
 BODY is the body sent to the URI.
 FORM is a content type."
   (let ((path (gensym "path")))
     `(let ((,path (if ,username
-                      (format "/api/%s/repos/%s/%s" ,username ,name ,endpoint)
+                      (format "/api/~%s/repos/%s/%s"
+                              (string-trim-left ,username "~") ,name ,endpoint)
                     (format "/api/repos/%s/%s" ,name ,endpoint))))
        (srht-git--make-crud ,path ,body ,form))))
 
-(defun srht-git--endpoint-widen (func name end &optional username body)
-  "TODO: doc."
+(defun srht-git--endpoint-widen (endpoint name end &optional username body)
+  "Extends the ENDPOINT for the repository NAME to include END.
+If USERNAME is nil the authenticated user is assumed.
+BODY is the body sent to the URI."
   (let* ((plist (if body
-                    (funcall func name username body)
-                  (funcall func name username)))
+                    (funcall endpoint name username body)
+                  (funcall endpoint name username)))
          (path (plist-get plist :path)))
     (setf (plist-get plist :path)
           (concat path "/" end))
     plist))
 
 (defun srht-git--artifact (name username body)
-  "TODO: doc."
-  (srht-git--endpoints "artifacts" name username body "multipart/form-data"))
+  "Helper function for `srht-git-repo-artifact'."
+  (srht-git--endpoint "artifacts" name username body "multipart/form-data"))
 
 (defun srht-git-repo-readme (name &optional username body form)
   "Retrieve, update or delete README override for repository NAME.
 
 If USERNAME is nil the authenticated user is assumed.
 BODY is the body sent to the URI.  FORM is a content type."
-  (srht-git--endpoints "readme" name username body form))
+  (srht-git--endpoint "readme" name username body form))
 
 (defun srht-git-repo-refs (name &optional username)
   "Endpoints for fetching git data from repository NAME.
 If USERNAME is nil the authenticated user is assumed."
-  (srht-git--endpoints "refs" name username))
+  (srht-git--endpoint "refs" name username))
 
 (defun srht-git-repo-log (name &optional username)
   "List of the latest commit log for repository NAME.
 If USERNAME is nil the authenticated user is assumed."
-  (srht-git--endpoints "log" name username))
+  (srht-git--endpoint "log" name username))
 
 (defun srht-git-repo-artifact (name ref body &optional username)
   "Attaches a file artifact to the specified REF and repository NAME.
@@ -156,7 +161,7 @@ is assumed."
   "Return the tree resource for the latest commit to the default branch.
 NAME is a repository name.  If USERNAME is nil the authenticated user
 is assumed."
-  (srht-git--endpoints "tree" name username))
+  (srht-git--endpoint "tree" name username))
 
 (defun srht-git--candidates ()
   "Return completion candidates."
@@ -220,6 +225,7 @@ Called when the request fails with one argument, a ‘plz-error’ struct PLZ-ER
                               :visibility visibility
                               :name name
                               :description description)
+               :then (lambda (_r))
                :else #'srht-git--else))
 
 (defun srht-git--find-info (repo-name)
@@ -269,7 +275,9 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
   (interactive (list (srht-git--repo-name-read)))
   (when (yes-or-no-p
          (format "This action cannot be undone.\n Delete %s repository?" name))
-    (srht-delete (srht-git-repo name) :else #'srht-git--else)))
+    (srht-delete (srht-git-repo name)
+                 :then (lambda (_r))
+                 :else #'srht-git--else)))
 
 (provide 'srht-git)
 ;;; srht-git.el ends here

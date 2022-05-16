@@ -1,8 +1,9 @@
 ;;; test.el --- Tests                                -*- lexical-binding: t; -*-
 
-;; Copyright © 2022 Aleksandr Vityazev <avityazev@posteo.org>
+;; Copyright © 2022  Free Software Foundation, Inc.
 
 ;; Author: Aleksandr Vityazev <avityazev@posteo.org>
+;; Maintainer: Aleksandr Vityazev <avityazev@posteo.org>
 ;; Keywords: tests
 
 ;; This program is free software; you can redistribute it and/or modify

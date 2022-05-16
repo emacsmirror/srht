@@ -1,13 +1,16 @@
 ;;; srht.el --- Sourcehut               -*- lexical-binding: t; -*-
 
-;; Copyright © 2022 Aleksandr Vityazev <avityazev@posteo.org>
+;; Copyright © 2022  Free Software Foundation, Inc.
 
 ;; Author: Aleksandr Vityazev <avityazev@posteo.org>
-;; Keywords: comm
-;; Package-Version: 0.1.0
+;; Maintainer: Aleksandr Vityazev <avityazev@posteo.org>
+;; Keywords: comm vc
+;; Package-Version: 0.1
 ;; Homepage: https://sr.ht/~akagi/srht.el/
 ;; Keywords: comm
-;; Package-Requires: ((emacs "27.1") (plz "0.1-pre"))
+;; Package-Requires: ((emacs "27.1") (plz "0.1"))
+
+;; This file is part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -43,10 +46,15 @@
   :group 'srht)
 
 (defcustom srht-token
-  (if-let ((f (plist-get (car (auth-source-search :host "paste.sr.ht"))
+  (if-let ((f (plist-get (car (auth-source-search :host "sr.ht"))
                          :secret)))
       (funcall f) "")
   "Personal access token for Sourcehut instance."
+  :type 'string
+  :group 'srht)
+
+(defcustom srht-username ""
+  "Sourcehut username."
   :type 'string
   :group 'srht)
 
@@ -177,35 +185,20 @@ The function should take one argument, STRING, which is a possible completion."
              (complete-with-action action collection string pred)))))
     (completing-read prompt table)))
 
-(defalias 'srht-file-name-concat
-  (if (fboundp 'file-name-concat)
-      #'file-name-concat
-    (lambda (directory &rest components)
-      (let ((components (cl-remove-if (lambda (el)
-                                        (or (null el) (equal "" el)))
-                                      components))
-            file-name-handler-alist)
-        (if (null components)
-            directory
-          (apply #'srht-file-name-concat
-                 (concat (unless (or (equal "" directory) (null directory))
-                           (file-name-as-directory directory))
-                         (car components))
-                 (cdr components)))))))
-
 (defun srht-kill-link (service name resource)
   "Make URL the latest kill in the kill ring.
 Constructed from SERVICE, NAME and RESOURCE."
-  (kill-new (srht-file-name-concat (srht--make-uri service nil nil) name resource))
+  (kill-new (srht--make-uri service (format "/%s/%s" name resource) nil))
   (message "URL in kill-ring"))
 
-(defmacro srht-with-json-read-from-string (string matching-pattern &rest body)
-  "TODO: doc."
+(defmacro srht-with-json-read-from-string (string pattern &rest body)
+  "Read the JSON object contained in STRING.
+Bind it with the ‘pcase’ PATTERN and do BODY."
   (declare (indent 1))
   `(pcase-let* ((json-object-type 'plist)
                 (json-key-type 'keyword)
                 (json-array-type 'list)
-                (,matching-pattern (json-read-from-string ,string)))
+                (,pattern (json-read-from-string ,string)))
      ,@body))
 
 (provide 'srht)

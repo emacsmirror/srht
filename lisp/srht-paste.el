@@ -1,6 +1,8 @@
 ;;; srht-paste.el --- Sourcehut paste                -*- lexical-binding: t; -*-
 
-;; Copyright © 2022 Aleksandr Vityazev <avityazev@posteo.org>
+;; Copyright © 2022  Free Software Foundation, Inc.
+
+;; This file is part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -128,7 +130,7 @@ Called when the request fails with one argument, a ‘plz-error’ struct PLZ-ER
   (let ((content (srht-paste--get-content)))
     (srht-create
      (srht-paste nil :visibility visibility :filename filename :contents content)
-     :then (lambda (_resp))
+     :then (lambda (_r))
      :else #'srht-paste--else)))
 
 ;;;###autoload
@@ -137,15 +139,16 @@ Called when the request fails with one argument, a ‘plz-error’ struct PLZ-ER
   (interactive
    (list (srht-paste--sha)))
   (srht-delete (srht-paste sha)
-               :then (lambda (resp)
-                       (message "%s" resp))
+               :then (lambda (_r))
                :else #'srht-paste--else))
 
 ;;;###autoload
-(defun srht-paste-link (user)
+(defun srht-paste-link ()
   "Kill the link of the selected paste owned by the USER."
-  (interactive (list (read-string "User: ")))
-  (srht-kill-link 'paste user (srht-paste--sha)))
+  (interactive)
+  (when (string-empty-p srht-username)
+    (error "`srht-username' must be set"))
+  (srht-kill-link 'paste (concat "~" srht-username) (srht-paste--sha)))
 
 (provide 'srht-paste)
 ;;; srht-paste.el ends here

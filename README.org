@@ -6,6 +6,21 @@
 * About
 GNU Emacs [[https://sr.ht][sourcehut]] API client.
 
+* Installation
+
+** With Guix
+
+#+begin_src sh
+git clone https://git.sr.ht/~akagi/srht.el srht
+cd srth
+guix package -f guix.scm
+#+end_src
+
+** Manual
+
+~srht~ depends on the HTTP library ~plz~ which is available in ELPA. After
+installing it, place files from /lisp folder in ~load-path~.
+
 * Setup
 
 To use this client, you need to [[https://meta.sr.ht/oauth/personal-token][generate]] a personal access token. This token
@@ -18,13 +33,35 @@ After creating the token:
 (setq srht-token TOKEN)
 #+end_src
 
-It is also possible to store the token using `auth-source.el', the host must be
-set to paste.sr.ht.
+It is also possible to store the token using =auth-source.el=, the host must be
+set to sr.ht.
 
 #+begin_example
-machine paste.sr.ht password TOKEN
+machine sr.ht password TOKEN
 #+end_example
+
+You also need to set srht-username:
+
+#+begin_src elisp :lexical t
+(setq srht-username USERNAME)
+#+end_src
+
+* Commands
+
+| Function             | Description                           |
+|----------------------+---------------------------------------|
+| =srht-git-repo-update= | Update information for git repository |
+| =srht-git-repo-delete= | Delete existing git repository        |
+| =srht-git-repo-create= | Create git repository                 |
+| =srht-paste-link=      | Kill the link of the selected paste   |
+| =srht-paste-delete=    | Detete paste with SHA                 |
+| =srht-paste-region=    | Paste region or buffer to sourcehut   |
+
 
 * License
 
 GPLv3
+
+# Local Variables:
+# eval: (require 'ox-md)
+# End:
