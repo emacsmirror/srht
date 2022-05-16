@@ -138,12 +138,13 @@ fails with one argument, a `plz-error' struct."
       :else else
       :as as)))
 
-(defun srht-generic-crud (service path &optional body form)
+(defun srht-generic-crud (service path &optional query body form)
   "Return a list of arguments to pass to `srht--make-crud-request'.
 SERVICE is the service to used, and PATH is the path for the URI.
 BODY is optional, if it is an empty list, the resulting list will not
-contain the body at all.  FORM is optional."
-  (let ((crud `(:service ,service :path ,path :form ,form)))
+contain the body at all.  FORM is optional.  QUERY is the query for the
+URI."
+  (let ((crud `(:service ,service :path ,path :query , query :form ,form)))
     (if body
         (append crud `(:body ,(if form body (json-encode body))))
       crud)))

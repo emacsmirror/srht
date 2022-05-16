@@ -30,11 +30,11 @@
 (defvar srht-git-repos nil
   "Authenticated user repos.")
 
-(defun srht-git--make-crud (path &optional body form)
+(defun srht-git--make-crud (path &optional query body form)
   "Make crud for git service.
 PATH is the path for the URI.  BODY is the body sent to the URI.
-FORM is a content type."
-  (srht-generic-crud 'git path body form))
+FORM is a content type.  QUERY is the query for the URI."
+  (srht-generic-crud 'git path query body form))
 
 (defun srht-git-user (&optional username)
   "Retrieves a user resource.
@@ -44,13 +44,15 @@ If USERNAME is nil, the authenticated user is assumed."
                 "/api/user")))
     (srht-git--make-crud path)))
 
-(defun srht-git-repos (&optional username)
+(defun srht-git-repos (&optional username query)
   "Retrive list of repository resources owned by this USERNAME.
-If USERNAME is nil the authenticated user is assumed."
+If USERNAME is nil the authenticated user is assumed.
+QUERY is the query for the URI.  To retrieve the next page of results,
+add start=:id to your QUERY, using the :id given by \"next\"."
   (let ((path (if username
                   (format "/api/~%s/repos" (string-trim-left username "~"))
                 "/api/repos")))
-    (srht-git--make-crud path)))
+    (srht-git--make-crud path query)))
 
 (cl-defun srht-git-make (&key visibility description name)
   "Make paste parameters.
@@ -81,14 +83,16 @@ When creating repository omit REPO-NAME and specify DETAILS
     (srht-git--make-crud
      (format "/api/~%s/repos/%s" (string-trim-left username "~") repo-name)))
    ((and (stringp repo-name) details)
-    (srht-git--make-crud (format "/api/repos/%s" repo-name)
-                         (apply #'srht-git-make details)))
+    (srht-git--make-crud
+     (format "/api/repos/%s" repo-name) nil (apply #'srht-git-make details)))
    ((stringp repo-name) (srht-git--make-crud (format "/api/repos/%s" repo-name)))
-   (t (srht-git--make-crud "/api/repos" (apply #'srht-git-make details)))))
+   (t (srht-git--make-crud "/api/repos" nil (apply #'srht-git-make details)))))
 
-(defmacro srht-git--endpoint (endpoint name username &optional body form)
+(defmacro srht-git--endpoint (endpoint name username &optional query body form)
   "Generate crud for ENDPOINT and repository NAME.
 If USERNAME is nil the authenticated user is assumed.
+QUERY is the query for the URI.  To retrieve the next page of results,
+add start=:id to your QUERY, using the :id given by \"next\".
 BODY is the body sent to the URI.
 FORM is a content type."
   (let ((path (gensym "path")))
@@ -96,14 +100,14 @@ FORM is a content type."
                       (format "/api/~%s/repos/%s/%s"
                               (string-trim-left ,username "~") ,name ,endpoint)
                     (format "/api/repos/%s/%s" ,name ,endpoint))))
-       (srht-git--make-crud ,path ,body ,form))))
+       (srht-git--make-crud ,path ,query ,body ,form))))
 
-(defun srht-git--endpoint-widen (endpoint name end &optional username body)
+(defun srht-git--endpoint-widen (endpoint name end &optional username body-or-query)
   "Extends the ENDPOINT for the repository NAME to include END.
 If USERNAME is nil the authenticated user is assumed.
-BODY is the body sent to the URI."
-  (let* ((plist (if body
-                    (funcall endpoint name username body)
+BODY-OR-QUERY is the body or query sent to the URI."
+  (let* ((plist (if body-or-query
+                    (funcall endpoint name username body-or-query)
                   (funcall endpoint name username)))
          (path (plist-get plist :path)))
     (setf (plist-get plist :path)
@@ -121,15 +125,17 @@ If USERNAME is nil the authenticated user is assumed.
 BODY is the body sent to the URI.  FORM is a content type."
   (srht-git--endpoint "readme" name username body form))
 
-(defun srht-git-repo-refs (name &optional username)
+(defun srht-git-repo-refs (name &optional username query)
   "Endpoints for fetching git data from repository NAME.
-If USERNAME is nil the authenticated user is assumed."
-  (srht-git--endpoint "refs" name username))
+If USERNAME is nil the authenticated user is assumed.
+QUERY is the query for the URI."
+  (srht-git--endpoint "refs" name username query))
 
-(defun srht-git-repo-log (name &optional username)
+(defun srht-git-repo-log (name &optional username query)
   "List of the latest commit log for repository NAME.
-If USERNAME is nil the authenticated user is assumed."
-  (srht-git--endpoint "log" name username))
+If USERNAME is nil the authenticated user is assumed.
+QUERY is the query for the URI."
+  (srht-git--endpoint "log" name username query))
 
 (defun srht-git-repo-artifact (name ref body &optional username)
   "Attaches a file artifact to the specified REF and repository NAME.
@@ -137,25 +143,25 @@ Note: this endpoint does not accept JSON.  Submit your request
 as `multipart/form-data', with a single field: file in BODY."
   (srht-git--endpoint-widen #'srht-git--artifact name ref username body))
 
-(defun srht-git-repo-log-ref (name ref &optional username)
+(defun srht-git-repo-log-ref (name ref &optional username query)
   "List of the latest commit resources starting from the given REF.
 NAME is a repository name.  If USERNAME is nil the authenticated user
-is assumed."
-  (srht-git--endpoint-widen #'srht-git-repo-log name ref username))
+is assumed.  QUERY is the query for the URI."
+  (srht-git--endpoint-widen #'srht-git-repo-log name ref username query))
 
-(defun srht-git-repo-tree-ref (name ref &optional username)
+(defun srht-git-repo-tree-ref (name ref &optional username query)
   "Return the tree resource for the given REF.
 Following the parent trees until the requested tree is found.
 In other words, this lists the contents of a subdirectory by path.
 NAME is a repository name.  If USERNAME is nil the authenticated user
-is assumed."
-  (srht-git--endpoint-widen #'srht-git-repo-tree name ref username))
+is assumed.  QUERY is the query for the URI."
+  (srht-git--endpoint-widen #'srht-git-repo-tree name ref username query))
 
-(defun srht-git-repo-tree-id (name id &optional username)
+(defun srht-git-repo-tree-id (name id &optional username query)
   "Return the tree resource with the given ID.
 NAME is a repository name.  If USERNAME is nil the authenticated user
-is assumed."
-  (srht-git--endpoint-widen #'srht-git-repo-tree name id username))
+is assumed.  QUERY is the query for the URI."
+  (srht-git--endpoint-widen #'srht-git-repo-tree name id username query))
 
 (defun srht-git-repo-tree (name &optional username)
   "Return the tree resource for the latest commit to the default branch.

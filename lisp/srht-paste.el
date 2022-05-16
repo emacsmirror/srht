@@ -28,10 +28,11 @@
 (defvar srht-paste-all-pastes nil
   "Stores pastes info.")
 
-(defun srht-paste--make-crud (path &optional body)
+(defun srht-paste--make-crud (path &optional query body)
   "Make crud for paste service.
-PATH is the path for the URI.  BODY is the body sent to the URI."
-  (srht-generic-crud 'paste path body))
+PATH is the path for the URI.  BODY is the body sent to the URI.
+QUERY is the query for the URI."
+  (srht-generic-crud 'paste path query body))
 
 (cl-defun srht-paste-make (&key (visibility "unlisted") (filename 'null) contents)
   "Make paste parameters.
@@ -43,9 +44,10 @@ CONTENTS must be a UTF-8 encoded string; binary files are not allowed."
     (files . [((filename . ,filename)
                (contents . ,contents))])))
 
-(defun srht-pastes ()
-  "Retrieve all the pastes that belong to the user."
-  (srht-paste--make-crud "/api/pastes"))
+(defun srht-pastes (&optional query)
+  "Retrieve all the pastes that belong to the user.
+QUERY is the query for the URI."
+  (srht-paste--make-crud "/api/pastes" query))
 
 (defun srht-paste-blob (sha)
   "Retrieve a blob resource with the hash SHA."
@@ -90,7 +92,7 @@ specify the DETAILS (see `srht-paste-make') of the paste."
    ((stringp sha)
     (srht-paste--make-crud (format "/api/pastes/%s" sha)))
    ((stringp (plist-get details :contents))
-    (srht-paste--make-crud "/api/pastes" (apply #'srht-paste-make details)))))
+    (srht-paste--make-crud "/api/pastes" nil (apply #'srht-paste-make details)))))
 
 (defun srht-paste--get-content ()
   "Extract the content we want to paste.
