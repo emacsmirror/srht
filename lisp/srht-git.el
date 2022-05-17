@@ -194,7 +194,7 @@ is assumed."
 (defun srht-git--repo-name-read ()
   "Read a repository name in the minibuffer, with completion."
   (srht-read-with-annotaion "Select repository: "
-    (srht-git--candidates) #'srht-git--annot))
+    (srht-git--candidates) #'srht-git--annot 'sourcehut-git-repository))
 
 (defvar srht-git-repo-name-history nil
   "History variable.")

@@ -126,7 +126,7 @@ THEN (see `plz').
 THEN is a callback function, which is called in the response data.
 ELSE is an optional callback function called when the request
 fails with one argument, a `plz-error' struct."
-  (unless srht-token
+  (when (or (string-empty-p srht-token) (not srht-token))
     (error "Need a token"))
   (let ((uri (srht--make-uri service path query))
         (content-type (or form "application/json")))
@@ -169,17 +169,20 @@ URI."
   "Create an API request with ARGS using the DELETE method."
   (srht--make-crud-request 'delete args))
 
-(defun srht-read-with-annotaion (prompt collection annot-function)
+(defun srht-read-with-annotaion (prompt collection annot-function category)
   "Read a string in the minibuffer, with completion.
 PROMPT is a string to prompt with; normally it ends in a colon and a space.
 COLLECTION can be a list of strings, an alist or a hash table.
-ANNOT-FUNCTION the value should be a function for “annotating” completions.
-The function should take one argument, STRING, which is a possible completion."
+ANNOT-FUNCTION value should be a function for “annotating” completions.
+The function should take one argument, STRING, which is a possible completion.
+CATEGORY value should be a symbol describing what kind of text the
+completion function is trying to complete."
   (declare (indent 1))
   (let ((table
          (lambda (string pred action)
            (if (eq action 'metadata)
                `(metadata
+                 (category . ,category)
                  (annotation-function . ,annot-function)
                  (cycle-sort-function . identity)
                  (display-sort-function . identity))

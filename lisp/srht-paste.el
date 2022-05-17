@@ -76,9 +76,10 @@ QUERY is the query for the URI."
 (defun srht-paste--sha ()
   "Read a FILENAME in the minibuffer, with completion and return SHA."
   (let ((cand (srht-paste--candidates)))
-    (car (last (assoc (srht-read-with-annotaion
-                          "Select paste: " cand #'srht-paste--annot)
-                      cand)))))
+    (car (last (assoc
+                (srht-read-with-annotaion
+                    "Select paste: " cand #'srht-paste--annot 'sourcehut-paste)
+                cand)))))
 
 (defun srht-paste (&optional sha &rest details)
   "Create, retrieve or delete a paste.
