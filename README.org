@@ -1,5 +1,7 @@
 #+OPTIONS: toc:nil
 
+#+html: <a href="https://elpa.gnu.org/packages/srht.html"><img alt="GNU ELPA" src="https://elpa.gnu.org/packages/srht.svg"/></a>
+#+html: <a href="https://elpa.gnu.org/devel/srht.html"><img alt="GNU-devel ELPA" src="https://elpa.gnu.org/devel/srht.svg"/></a>
 #+html: <a href="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml"><img alt="Build" src="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml.svg"/></a>
 *** Version 0.1
 
@@ -54,7 +56,7 @@ You also need to set srht-username:
 If you are using a self-hosted instanse:
 
 #+begin_src elisp :lexical t
-(setq srht-domain DOMAIN)
+(setq srht-domain '(DOMAIN ...))
 #+end_src
 
 * Commands
@@ -68,6 +70,13 @@ If you are using a self-hosted instanse:
 | =srht-paste-delete=    | Detete paste with SHA                 |
 | =srht-paste-region=    | Paste region or buffer to sourcehut   |
 
+* Copyright assignment
+
+This package is part of [[https://www.gnu.org/software/emacs/][GNU Emacs]], being distributed in [[https://elpa.gnu.org/][GNU ELPA]].  Contributions
+to this project must follow GNU guidelines, which means that, as with other
+parts of Emacs, patches of more than a few lines must be accompanied by having
+assigned copyright for the contribution to the FSF.  Contributors who wish to do
+so may contact [[mailto:emacs-devel@gnu.org][emacs-devel@gnu.org]] to request the assignment form.
 
 * License
 

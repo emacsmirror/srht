@@ -1,3 +1,7 @@
+<a href="https://elpa.gnu.org/packages/srht.html"><img alt="GNU ELPA" src="https://elpa.gnu.org/packages/srht.svg"/></a>
+
+<a href="https://elpa.gnu.org/devel/srht.html"><img alt="GNU-devel ELPA" src="https://elpa.gnu.org/devel/srht.svg"/></a>
+
 <a href="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml"><img alt="Build" src="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml.svg"/></a>
 
 
@@ -50,7 +54,7 @@ You also need to set srht-username:
 
 If you are using a self-hosted instanse:
 
-    (setq srht-domain DOMAIN)
+    (setq srht-domain '(DOMAIN ...))
 
 
 # Commands
@@ -107,6 +111,15 @@ If you are using a self-hosted instanse:
 </tr>
 </tbody>
 </table>
+
+
+# Copyright assignment
+
+This package is part of [GNU Emacs](https://www.gnu.org/software/emacs/), being distributed in [GNU ELPA](https://elpa.gnu.org/).  Contributions
+to this project must follow GNU guidelines, which means that, as with other
+parts of Emacs, patches of more than a few lines must be accompanied by having
+assigned copyright for the contribution to the FSF.  Contributors who wish to do
+so may contact [emacs-devel@gnu.org](mailto:emacs-devel@gnu.org) to request the assignment form.
 
 
 # License

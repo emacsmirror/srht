@@ -40,9 +40,11 @@
   :prefix "srht"
   :group 'comm)
 
-(defcustom srht-domain "sr.ht"
-  "Sourcehut domain."
-  :type 'string
+(defcustom srht-domains '("sr.ht")
+  "Sourcehut instance domain names."
+  :type '(list (repeat :tag "Domain"
+		       :inline t
+		       (string :format "%v")))
   :group 'srht)
 
 (defcustom srht-token
@@ -76,11 +78,13 @@ PATH should be strings or nil.  QUERY should be strings or nil."
      (_ (error "Expected absolute path starting with \"/\" or empty string: %s" path)))
    (if query (concat "?" query) "")))
 
-(defun srht--make-uri (service path query)
-  "Construct a URI for making a request to Sourcehut.
+(defun srht--make-uri (domain service path query)
+  "Construct a URI for making a request to Sourcehut DOMAIN.
 SERVICE is name of the service, PATH is the path for the URI, and
 QUERY is the query for the URI."
-  (let ((host (format "%s.%s" service srht-domain)))
+  (cl-assert (and (not (string-empty-p domain)) domain)
+             nil "Require domain")
+  (let ((host (format "%s.%s" service domain)))
     (srht--build-uri-string
      'https :host host :path path :query query)))
 
@@ -104,13 +108,15 @@ narrowed to the response body."
     (json-read)))
 
 ;; TODO add body-type to use with `multipart/from-data'
-(cl-defun srht--api-request (method &key service path query
+(cl-defun srht--api-request (method &key domain service path query
                                     body (else #'srht--else)
                                     form (then 'sync) (as #'srht--as)
                                     &allow-other-keys)
   "Request METHOD from SERVICE.
 Return the curl process object or, for a synchronous request, the
 selected result.
+
+DOMAIN is the domain name of the Sourcehut instance.
 
 HEADERS may be an alist of extra headers to send with the
 request.
@@ -126,9 +132,9 @@ THEN (see `plz').
 THEN is a callback function, which is called in the response data.
 ELSE is an optional callback function called when the request
 fails with one argument, a `plz-error' struct."
-  (when (or (string-empty-p srht-token) (not srht-token))
-    (error "Need a token"))
-  (let ((uri (srht--make-uri service path query))
+  (cl-assert (and (not (string-empty-p srht-token)) srht-token)
+             nil "Need a token")
+  (let ((uri (srht--make-uri domain service path query))
         (content-type (or form "application/json")))
     (plz method uri
       :headers `(,(cons "Content-Type" content-type)
@@ -138,13 +144,15 @@ fails with one argument, a `plz-error' struct."
       :else else
       :as as)))
 
-(defun srht-generic-crud (service path &optional query body form)
+(defun srht-generic-crud (domain service path &optional query body form)
   "Return a list of arguments to pass to `srht--make-crud-request'.
+DOMAIN is the domain name of the Sourcehut instance.
 SERVICE is the service to used, and PATH is the path for the URI.
 BODY is optional, if it is an empty list, the resulting list will not
 contain the body at all.  FORM is optional.  QUERY is the query for the
 URI."
-  (let ((crud `(:service ,service :path ,path :query , query :form ,form)))
+  (let ((crud `(:domain ,domain :service ,service
+                :path ,path :query , query :form ,form)))
     (if body
         (append crud `(:body ,(if form body (json-encode body))))
       crud)))
@@ -187,12 +195,12 @@ completion function is trying to complete."
                  (cycle-sort-function . identity)
                  (display-sort-function . identity))
              (complete-with-action action collection string pred)))))
-    (completing-read prompt table)))
+    (completing-read prompt table nil t)))
 
-(defun srht-kill-link (service name resource)
+(defun srht-kill-link (domain service name resource)
   "Make URL the latest kill in the kill ring.
-Constructed from SERVICE, NAME and RESOURCE."
-  (kill-new (srht--make-uri service (format "/%s/%s" name resource) nil))
+Constructed from DOMAIN, SERVICE, NAME and RESOURCE."
+  (kill-new (srht--make-uri domain service (format "/%s/%s" name resource) nil))
   (message "URL in kill-ring"))
 
 (defmacro srht-with-json-read-from-string (string pattern &rest body)
@@ -204,6 +212,47 @@ Bind it with the ‘pcase’ PATTERN and do BODY."
                 (json-array-type 'list)
                 (,pattern (json-read-from-string ,string)))
      ,@body))
+
+(defun srht-read-domain (prompt)
+  "Read domain name of the Sourcehut instance from `srht-domains' collection.
+If the collection contains only one name, return it without completion.
+PROMPT is a string to prompt with; normally it ends in a colon and a space."
+  (if (eq (length srht-domains) 1)
+      (car srht-domains)
+    (completing-read prompt srht-domains nil t)))
+
+(defun srht-read-visibility (prompt &optional initial-input)
+  "Select a visibility through `completing-read'.
+PROMPT, INITIAL-INPUT see `completing-read' doc."
+  (completing-read prompt '("private" "public" "unlisted") nil t initial-input))
+
+(defun srht-results-get (domain plist)
+  "Extract the value for the :results property.
+For the existing PLIST for the DOMAIN domain name."
+  (declare (indent 1))
+  (plist-get (plist-get plist (intern domain)) :results))
+
+(defmacro srht-put (plist domain val)
+  "Change value in PLIST of DOMAIN to VAL if is not nil."
+  (declare (indent 1))
+  `(when ,val (setq ,plist (plist-put ,plist (intern ,domain) ,val))))
+
+(defmacro srht-annotation (pattern candidates str)
+  "Annotate STR.
+The value of the first CANDIDATES elements whose car equal STR is bind
+to pcase PATTERN."
+  (declare (indent 1))
+  (let ((bb (gensym "bb"))
+        (sb (gensym "sb"))
+        (l (gensym "l")))
+    `(pcase-let* ((,pattern (assoc ,str ,candidates))
+                  (,l (- 40 (length (substring-no-properties ,str))))
+                  (,bb (make-string ,l (string-to-char " ")))
+                  (,sb (cond
+                        ((string= visibility "public") "      ")
+                        ((string= visibility "private") "     ")
+                        ((string= visibility "unlisted") "    "))))
+       (concat ,bb (format "%s%s%s" visibility ,sb created)))))
 
 (provide 'srht)
 ;;; srht.el ends here
