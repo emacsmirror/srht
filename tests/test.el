@@ -31,14 +31,15 @@
 (require 'srht-git)
 
 (ert-deftest srht-paste ()
-  (should (equal (srht-paste "489fa091d5c6d5751769375a6f0e00447347adff")
-                 '(:service paste
+  (should (equal (srht-paste "sr.ht" "489fa091d5c6d5751769375a6f0e00447347adff")
+                 '(:domain "sr.ht"
+                   :service paste
                    :path "/api/pastes/489fa091d5c6d5751769375a6f0e00447347adff"
                    :query nil
                    :form nil))))
 
 (ert-deftest srht-git-repo-retrive ()
-  (pcase-let (((map (:path name)) (srht-git-repo "srht.el")))
+  (pcase-let (((map (:path name)) (srht-git-repo "sr.ht" "srht.el")))
     (should (equal "/api/repos/srht.el" name))))
 
 ;; (srht-retrive (srht-git-user "~akagi"))
