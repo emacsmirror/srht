@@ -74,7 +74,7 @@ For the existing PASTES for the DOMAIN domain name."
 (defun srht-paste--annot (domain str)
   "Function to add annotations in the completions buffer for STR and DOMAIN."
   (srht-annotation (seq _f created visibility)
-    (assoc str (srht-paste--candidates domain)) str))
+    (srht-paste--candidates domain) str))
 
 (defun srht-paste--sha (domain)
   "Read a FILENAME in the minibuffer, with completion and return SHA.
