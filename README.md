@@ -23,7 +23,7 @@ hosting and `paste.sr.ht` — ad-hoc text file hosting.
 ## With Guix
 
     git clone https://git.sr.ht/~akagi/srht.el srht
-    cd srth
+    cd srht
     guix package -f guix.scm
 
 

@@ -19,7 +19,7 @@ hosting and =paste.sr.ht= — ad-hoc text file hosting.
 
 #+begin_src sh
 git clone https://git.sr.ht/~akagi/srht.el srht
-cd srth
+cd srht
 guix package -f guix.scm
 #+end_src
 
