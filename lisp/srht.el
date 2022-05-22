@@ -51,12 +51,13 @@
   (if-let ((f (plist-get (car (auth-source-search :host "sr.ht"))
                          :secret)))
       (funcall f) "")
-  "Personal access token for Sourcehut instance."
+  "Personal access token for Sourcehut instance.
+It is necessary to use Oauth personal token not Oauth2."
   :type 'string
   :group 'srht)
 
 (defcustom srht-username ""
-  "Sourcehut username."
+  "Sourcehut username.  May contain ~ or not, your choice."
   :type 'string
   :group 'srht)
 

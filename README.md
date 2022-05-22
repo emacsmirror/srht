@@ -35,9 +35,9 @@ installing it, place files from /lisp folder in `load-path`.
 
 # Setup
 
-To use this client, you need to [generate](https://meta.sr.ht/oauth/personal-token) a personal access token. This token
-will have unrestricted access to all sr.ht APIs and can be used like a normal
-access token to authenticate API requests.
+To use this client, you need to [generate](https://meta.sr.ht/oauth/personal-token) a personal access token (Oauth not
+Oauth2). This token will have unrestricted access to all sr.ht APIs and can be
+used like a normal access token to authenticate API requests.
 
 After creating the token:
 
