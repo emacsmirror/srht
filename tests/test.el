@@ -70,5 +70,20 @@
 
 ;; (srht-retrive (srht-git-repo-tree "rrr"))
 
+
+;; BUILDS
+
+;; (srht-retrive (srht-builds-jobs "sr.ht"))
+
+;; (srht-builds-make :manifest "
+;; image: guix
+;; packages:
+;;   - make
+;;   - emacs-next
+;;   - emacs-eldev
+;;   - emacs-plz
+;; sources:
+;;   - https://git.sr.ht/~akagi/srht.el")
+
 (provide 'test)
 ;;; test.el ends here
