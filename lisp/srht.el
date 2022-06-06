@@ -47,10 +47,7 @@
 		       (string :format "%v")))
   :group 'srht)
 
-(defcustom srht-token
-  (if-let ((f (plist-get (car (auth-source-search :host "sr.ht"))
-                         :secret)))
-      (funcall f) "")
+(defcustom srht-token nil
   "Personal access token for Sourcehut instance.
 It is necessary to use Oauth personal token not Oauth2."
   :type 'string
@@ -60,6 +57,22 @@ It is necessary to use Oauth personal token not Oauth2."
   "Sourcehut username.  May contain ~ or not, your choice."
   :type 'string
   :group 'srht)
+
+(defun srht-token ()
+  "Lookup variable `srht-token' if needed and return it.
+If variable `srht-token' is nil or cannot be looked up or is empty, signal
+an error."
+  (if srht-token
+      srht-token
+    (let ((token (when-let ((f (plist-get
+                                (car (auth-source-search :host "sr.ht"))
+                                :secret)))
+                   (funcall f))))
+      (unless token
+        (error "No srht-token"))
+      (when (string-empty-p token)
+        (error "srht-token must not be empty"))
+      token)))
 
 (cl-defun srht--build-uri-string (scheme &key host path query)
   "Construct a URI string.
@@ -133,13 +146,11 @@ THEN (see `plz').
 THEN is a callback function, which is called in the response data.
 ELSE is an optional callback function called when the request
 fails with one argument, a `plz-error' struct."
-  (cl-assert (and (not (string-empty-p srht-token)) srht-token)
-             nil "Need a token")
   (let ((uri (srht--make-uri domain service path query))
         (content-type (or form "application/json")))
     (plz method uri
       :headers `(,(cons "Content-Type" content-type)
-                 ,(cons "Authorization" (concat "token " srht-token)))
+                 ,(cons "Authorization" (concat "token " (srht-token))))
       :body body
       :then then
       :else else
