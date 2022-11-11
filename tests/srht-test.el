@@ -1,4 +1,4 @@
-;;; test.el --- Tests                                -*- lexical-binding: t; -*-
+;;; srht-test.el --- Tests                                -*- lexical-binding: t; -*-
 
 ;; Copyright © 2022  Free Software Foundation, Inc.
 
@@ -85,5 +85,4 @@
 ;; sources:
 ;;   - https://git.sr.ht/~akagi/srht.el")
 
-(provide 'test)
-;;; test.el ends here
+;;; srht-test.el ends here
