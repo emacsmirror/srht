@@ -5,7 +5,7 @@
 ;; Author: Aleksandr Vityazev <avityazev@posteo.org>
 ;; Maintainer: Aleksandr Vityazev <avityazev@posteo.org>
 ;; Keywords: comm vc
-;; Package-Version: 0.1
+;; Package-Version: 0.2
 ;; Homepage: https://sr.ht/~akagi/srht.el/
 ;; Keywords: comm
 ;; Package-Requires: ((emacs "27.1") (plz "0.1"))

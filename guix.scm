@@ -62,7 +62,7 @@
 (define-public emacs-srht
   (let ((commit (last-commit-hash))
         (revision "0")
-        (version "0.1.0"))
+        (version "0.2"))
     (package
       (name "emacs-srht")
       (version (git-version version revision commit))

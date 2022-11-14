@@ -5,7 +5,7 @@
 <a href="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml"><img alt="Build" src="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml.svg"/></a>
 
 
-### Version 0.1
+### Version 0.2
 
 
 # About

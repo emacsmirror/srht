@@ -3,7 +3,7 @@
 #+html: <a href="https://elpa.gnu.org/packages/srht.html"><img alt="GNU ELPA" src="https://elpa.gnu.org/packages/srht.svg"/></a>
 #+html: <a href="https://elpa.gnu.org/devel/srht.html"><img alt="GNU-devel ELPA" src="https://elpa.gnu.org/devel/srht.svg"/></a>
 #+html: <a href="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml"><img alt="Build" src="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml.svg"/></a>
-*** Version 0.1
+*** Version 0.2
 
 * About
 
