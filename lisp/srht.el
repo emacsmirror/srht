@@ -5,7 +5,7 @@
 ;; Author: Aleksandr Vityazev <avityazev@posteo.org>
 ;; Maintainer: Aleksandr Vityazev <avityazev@posteo.org>
 ;; Keywords: comm vc
-;; Package-Version: 0.2
+;; Package-Version: 0.3
 ;; Homepage: https://sr.ht/~akagi/srht.el/
 ;; Keywords: comm
 ;; Package-Requires: ((emacs "27.1") (plz "0.7"))
@@ -258,22 +258,14 @@ For the existing PLIST for the DOMAIN domain name."
   (declare (indent 1))
   `(when ,val (setq ,plist (plist-put ,plist (intern ,domain) ,val))))
 
-(defmacro srht-annotation (pattern candidates str)
-  "Annotate STR.
-The value of the first CANDIDATES elements whose car equal STR is bind
-to pcase PATTERN."
+(defun srht-annotation (str visibility created)
+  "Return an annotation for STR using VISIBILITY and CREATED."
   (declare (indent 1))
-  (let ((bb (gensym "bb"))
-        (sb (gensym "sb"))
-        (l (gensym "l")))
-    `(pcase-let* ((,pattern (assoc ,str ,candidates))
-                  (,l (- 40 (length (substring-no-properties ,str))))
-                  (,bb (make-string ,l (string-to-char " ")))
-                  (,sb (cond
-                        ((string= visibility "public") "      ")
-                        ((string= visibility "private") "     ")
-                        ((string= visibility "unlisted") "    "))))
-       (concat ,bb (format "%s%s%s" visibility ,sb created)))))
+  (let* ((ws-char (string-to-char " "))
+         (len (- 40 (length (substring-no-properties str))))
+         (blank (make-string (if (> len 1) len 1) ws-char)))
+    (concat blank visibility (make-string (- 12 (length visibility)) ws-char)
+            created)))
 
 (provide 'srht)
 ;;; srht.el ends here

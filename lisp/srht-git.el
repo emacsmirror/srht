@@ -185,8 +185,9 @@ is assumed."
 
 (defun srht-git--annot (domain str)
   "Function to add annotations in the completions buffer for STR and DOMAIN."
-  (srht-annotation (seq _n created visibility)
-    (srht-git--candidates domain) str))
+  (pcase-let (((seq _n created visibility)
+               (assoc str (srht-git--candidates domain))))
+    (srht-annotation str visibility created)))
 
 (defun srht-git--repo-name-read (domain)
   "Read a repository name in the minibuffer, with completion.
