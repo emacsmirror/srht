@@ -110,29 +110,6 @@ the whole buffer."
       (buffer-substring-no-properties (region-beginning) (region-end))
     (buffer-string)))
 
-(defun srht-paste--else (domain plz-error)
-  "An optional callback function.
-Called when the request fails with one argument, a ‘plz-error’ struct PLZ-ERROR
-and domain name DOMAIN."
-  (pcase-let* (((cl-struct plz-error response) plz-error)
-               ((cl-struct plz-response status body) response))
-    (pcase status
-      (201 (srht-with-json-read-from-string body
-             (map (:sha sha)
-                  (:user (map (:canonical_name username))))
-             (let ((url (srht--make-uri
-                         domain 'paste (format "/%s/%s" username sha) nil)))
-               (srht-copy-url url)
-               (srht-browse-url url)
-               (srht-retrive (srht-pastes domain)
-                             :then (lambda (resp)
-                                     (srht-put srht-paste-all-pastes domain resp))))))
-      (204 (srht-retrive (srht-pastes domain)
-                         :then (lambda (resp)
-                                 (srht-put srht-paste-all-pastes domain resp)
-                                 (message "Deleted!"))))
-      (_ (error "Unkown error with status %s: %S" status plz-error)))))
-
 ;;;###autoload
 (defun srht-paste-region (domain visibility filename)
   "Paste region or buffer to Sourcehut instance with DOMAIN.
@@ -148,8 +125,18 @@ Set FILENAME and VISIBILITY."
                  :visibility visibility
                  :filename filename
                  :contents content)
-     :then (lambda (_r))
-     :else (lambda (err) (srht-paste--else domain err)))))
+     :then
+     (lambda (results)
+       (pcase-let* (((map (:sha sha)
+                          (:user (map (:canonical_name username))))
+                     results)
+                    (url (srht--make-uri
+                          domain 'paste (format "/%s/%s" username sha) nil)))
+         (srht-copy-url url)
+         (srht-browse-url url)
+         (srht-retrive (srht-pastes domain)
+                       :then (lambda (resp)
+                               (srht-put srht-paste-all-pastes domain resp))))))))
 
 ;;;###autoload
 (defun srht-paste-delete (domain sha)
@@ -157,9 +144,15 @@ Set FILENAME and VISIBILITY."
   (interactive
    (let ((instance (srht-read-domain "Instance: ")))
      (list instance (srht-paste--sha instance))))
-  (srht-delete (srht-paste domain sha)
-               :then (lambda (_r))
-               :else (lambda (err) (srht-paste--else domain err))))
+  (srht-delete
+   (srht-paste domain sha)
+   :as 'string
+   :then (lambda (_r)
+           (srht-retrive
+            (srht-pastes domain)
+            :then (lambda (resp)
+                    (srht-put srht-paste-all-pastes domain resp)
+                    (message "Deleted!"))))))
 
 ;;;###autoload
 (defun srht-paste-copy-url (domain)
