@@ -1,6 +1,6 @@
 ;;; srht-builds.el --- Sourcehut builds              -*- lexical-binding: t; -*-
 
-;; Copyright © 2022  Free Software Foundation, Inc.
+;; Copyright © 2022-2023  Free Software Foundation, Inc.
 
 ;; This file is part of GNU Emacs.
 

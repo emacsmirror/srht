@@ -1,6 +1,6 @@
 ;;; srht-git.el --- Sourcehut git                    -*- lexical-binding: t; -*-
 
-;; Copyright © 2022  Free Software Foundation, Inc.
+;; Copyright © 2022-2023  Free Software Foundation, Inc.
 
 ;; Created: <2022-04-26 Tue>
 
@@ -209,7 +209,10 @@ and domain name DOMAIN."
       (201 (srht-with-json-read-from-string body
              (map (:name repo-name)
                   (:owner (map (:canonical_name username))))
-             (srht-kill-link domain 'git username repo-name)
+             (let ((url (srht--make-uri
+                         domain 'git (format "/%s/%s" username repo-name) nil)))
+               (srht-copy-url url)
+               (srht-browse-url url))
              (srht-retrive (srht-git-repos domain)
                            :then (lambda (resp)
                                    (srht-put srht-git-repos domain resp)))))

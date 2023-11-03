@@ -1,6 +1,6 @@
 ;;; srht.el --- Sourcehut               -*- lexical-binding: t; -*-
 
-;; Copyright © 2022  Free Software Foundation, Inc.
+;; Copyright © 2022-2023  Free Software Foundation, Inc.
 
 ;; Author: Aleksandr Vityazev <avityazev@posteo.org>
 ;; Maintainer: Aleksandr Vityazev <avityazev@posteo.org>
@@ -8,7 +8,7 @@
 ;; Package-Version: 0.2
 ;; Homepage: https://sr.ht/~akagi/srht.el/
 ;; Keywords: comm
-;; Package-Requires: ((emacs "27.1") (plz "0.1"))
+;; Package-Requires: ((emacs "27.1") (plz "0.7"))
 
 ;; This file is part of GNU Emacs.
 
@@ -56,6 +56,11 @@ It is necessary to use Oauth personal token not Oauth2."
 (defcustom srht-username ""
   "Sourcehut username.  May contain ~ or not, your choice."
   :type 'string
+  :group 'srht)
+
+(defcustom srht-browse-url-after-kill nil
+  "When t open the url copied to `kill-ring' url `browse-url'."
+  :type 'boolean
   :group 'srht)
 
 (defun srht-token ()
@@ -209,11 +214,15 @@ completion function is trying to complete."
              (complete-with-action action collection string pred)))))
     (completing-read prompt table nil t)))
 
-(defun srht-kill-link (domain service name resource)
-  "Make URL the latest kill in the kill ring.
-Constructed from DOMAIN, SERVICE, NAME and RESOURCE."
-  (kill-new (srht--make-uri domain service (format "/%s/%s" name resource) nil))
-  (message "URL in kill-ring"))
+(defun srht-copy-url (url)
+  "Make URL the latest kill in the kill ring."
+  (kill-new url)
+  (message "Copied \"%s\" into clipboard" url))
+
+(defun srht-browse-url (url)
+  "Browse URL."
+  (when srht-browse-url-after-kill
+    (browse-url url)))
 
 (defmacro srht-with-json-read-from-string (string pattern &rest body)
   "Read the JSON object contained in STRING.
