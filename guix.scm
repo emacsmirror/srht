@@ -24,32 +24,10 @@
              (guix build-system emacs)
              ((guix licenses) #:prefix license:)
              (gnu packages emacs)
+             (gnu packages emacs-xyz)
              (ice-9 receive)
              (ice-9 popen)
              (ice-9 rdelim))
-
-(define-public emacs-plz
-  (let ((commit "1d3efc036c9fdb7242499575e4d6bdcc928b0539")
-        (revision "2")
-        (version "0.1-pre"))
-    (package
-      (name "emacs-plz")
-      (version (git-version version revision commit))
-      (source
-       (origin
-         (method git-fetch)
-         (uri (git-reference
-               (url "https://github.com/alphapapa/plz.el")
-               (commit commit)))
-         (file-name (git-file-name name version))
-         (sha256
-          (base32
-           "1vfa4igsvgspfx6qqzgdxb86hgbkcdr8hf63hr98yqfh7dngqjnz"))))
-      (build-system emacs-build-system)
-      (home-page "https://github.com/alphapapa/plz.el")
-      (synopsis "GNU Emacs HTTP library")
-      (description #f)
-      (license license:gpl3+))))
 
 (define (last-commit-hash)
   (receive (in out pids)
@@ -59,16 +37,34 @@
       (close out)
       val)))
 
+(define %source-dir (dirname (current-filename)))
+
 (define-public emacs-srht
   (let ((commit (last-commit-hash))
         (revision "0")
-        (version "0.2"))
+        (version "0.3"))
     (package
       (name "emacs-srht")
       (version (git-version version revision commit))
-      (source (local-file "./lisp" #:recursive? #t))
+      (source (local-file %source-dir
+                          #:recursive? #t
+                          #:select? (git-predicate %source-dir)))
       (build-system emacs-build-system)
-      (arguments (list #:emacs emacs-next))
+      (arguments
+       (list
+        #:emacs emacs-next
+        #:tests? #t
+        #:test-command #~(list "emacs" "--batch"
+                               "-l" "tests/srht-test.el"
+                               "-f" "ert-run-tests-batch-and-exit")
+        #:phases
+        #~(modify-phases %standard-phases
+            (add-after 'unpack 'move-source-files
+              (lambda _
+                (let ((el-files (find-files "./lisp" ".*\\.el$")))
+                  (for-each (lambda (f)
+                              (rename-file f (basename f)))
+                            el-files)))))))
       (propagated-inputs (list emacs-plz))
       (home-page "https://git.sr.ht/~akagi/srht.el")
       (synopsis "Interact with sourcehut")
