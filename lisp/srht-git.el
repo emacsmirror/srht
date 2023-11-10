@@ -28,32 +28,32 @@
 (require 'srht)
 
 (defvar srht-git-repos nil
-  "Authenticated user repos plist of the form (:domain repos ...).")
+  "Authenticated user repos plist of the form (:instance repos ...).")
 
-(defun srht-git--make-crud (domain path &optional query body form)
-  "Make a crud for the git service for the DOMAIN of the Sourcehut instance.
+(defun srht-git--make-crud (instance path &optional query body form)
+  "Make a crud for the git service for the INSTANCE of the Sourcehut instance.
 PATH is the path for the URI.  BODY is the body sent to the URI.
 FORM is a content type.  QUERY is the query for the URI."
   (declare (indent 1))
-  (srht-generic-crud domain 'git path query body form))
+  (srht-generic-crud instance 'git path query body form))
 
-(defun srht-git-user (domain &optional username)
-  "Retrieves a user resource from DOMAIN.
+(defun srht-git-user (instance &optional username)
+  "Retrieves a user resource from INSTANCE.
 If USERNAME is nil, the authenticated user is assumed."
   (let ((path (if username
                   (concat "/api/user/~" (string-trim-left username "~"))
                 "/api/user")))
-    (srht-git--make-crud domain path)))
+    (srht-git--make-crud instance path)))
 
-(defun srht-git-repos (domain &optional username query)
-  "Retrive list of repository resources owned by this USERNAME from DOMAIN.
+(defun srht-git-repos (instance &optional username query)
+  "Retrive list of repository resources owned by this USERNAME from INSTANCE.
 If USERNAME is nil the authenticated user is assumed.
 QUERY is the query for the URI.  To retrieve the next page of results,
 add start=:id to your QUERY, using the :id given by \"next\"."
   (let ((path (if username
                   (format "/api/~%s/repos" (string-trim-left username "~"))
                 "/api/repos")))
-    (srht-git--make-crud domain path query)))
+    (srht-git--make-crud instance path query)))
 
 (cl-defun srht-git-make (&key visibility description name)
   "Make paste parameters.
@@ -66,8 +66,8 @@ NAME is repository name."
     (description . ,description)
     (visibility . ,visibility)))
 
-(defun srht-git-repo (domain repo-name &optional username &rest details)
-  "Create, retrieve, delete or update a git repository from DOMAIN.
+(defun srht-git-repo (instance repo-name &optional username &rest details)
+  "Create, retrieve, delete or update a git repository from INSTANCE.
 
 When retrieving, deleting or updating a repository, REPO-NAME must be
 the name of an existing repository.
@@ -81,17 +81,17 @@ When creating repository omit REPO-NAME and specify DETAILS
 \(see `srht-git-make'\)."
   (cond
    ((and (stringp repo-name) (stringp username))
-    (srht-git--make-crud domain
+    (srht-git--make-crud instance
       (format "/api/~%s/repos/%s" (string-trim-left username "~") repo-name)))
    ((and (stringp repo-name) details)
-    (srht-git--make-crud domain
+    (srht-git--make-crud instance
       (format "/api/repos/%s" repo-name) nil (apply #'srht-git-make details)))
    ((stringp repo-name)
-    (srht-git--make-crud domain (format "/api/repos/%s" repo-name)))
-   (t (srht-git--make-crud domain "/api/repos" nil (apply #'srht-git-make details)))))
+    (srht-git--make-crud instance (format "/api/repos/%s" repo-name)))
+   (t (srht-git--make-crud instance "/api/repos" nil (apply #'srht-git-make details)))))
 
-(defmacro srht-git--endpoint (domain endpoint name username &optional query body form)
-  "Generate crud for ENDPOINT and repository NAME for DOMAIN.
+(defmacro srht-git--endpoint (instance endpoint name username &optional query body form)
+  "Generate crud for ENDPOINT and repository NAME for INSTANCE.
 If USERNAME is nil the authenticated user is assumed.
 QUERY is the query for the URI.  To retrieve the next page of results,
 add start=:id to your QUERY, using the :id given by \"next\".
@@ -102,115 +102,115 @@ FORM is a content type."
                       (format "/api/~%s/repos/%s/%s"
                               (string-trim-left ,username "~") ,name ,endpoint)
                     (format "/api/repos/%s/%s" ,name ,endpoint))))
-       (srht-git--make-crud ,domain ,path ,query ,body ,form))))
+       (srht-git--make-crud ,instance ,path ,query ,body ,form))))
 
-(defun srht-git--endpoint-widen (endpoint domain name end &optional username body-or-query)
-  "Extend the ENDPOINT for the repository NAME from DOMAIN to include END.
+(defun srht-git--endpoint-widen (endpoint instance name end &optional username body-or-query)
+  "Extend the ENDPOINT for the repository NAME from INSTANCE to include END.
 If USERNAME is nil the authenticated user is assumed.
 BODY-OR-QUERY is the body or query sent to the URI."
   (let* ((plist (if body-or-query
-                    (funcall domain endpoint name username body-or-query)
-                  (funcall domain endpoint name username)))
+                    (funcall instance endpoint name username body-or-query)
+                  (funcall instance endpoint name username)))
          (path (plist-get plist :path)))
     (setf (plist-get plist :path)
           (concat path "/" end))
     plist))
 
-(defun srht-git--artifact (domain name username body)
+(defun srht-git--artifact (instance name username body)
   "Helper function for `srht-git-repo-artifact'."
-  (srht-git--endpoint domain "artifacts" name username body "multipart/form-data"))
+  (srht-git--endpoint instance "artifacts" name username body "multipart/form-data"))
 
-(defun srht-git-repo-readme (domain name &optional username body form)
-  "Retrieve, update or delete README override for repository NAME from DOMAIN.
+(defun srht-git-repo-readme (instance name &optional username body form)
+  "Retrieve, update or delete README override for repository NAME from INSTANCE.
 
 If USERNAME is nil the authenticated user is assumed.
 BODY is the body sent to the URI.  FORM is a content type."
-  (srht-git--endpoint domain "readme" name username body form))
+  (srht-git--endpoint instance "readme" name username body form))
 
-(defun srht-git-repo-refs (domain name &optional username query)
-  "Endpoints for fetching git data from repository NAME from DOMAIN.
+(defun srht-git-repo-refs (instance name &optional username query)
+  "Endpoints for fetching git data from repository NAME from INSTANCE.
 If USERNAME is nil the authenticated user is assumed.
 QUERY is the query for the URI."
-  (srht-git--endpoint domain "refs" name username query))
+  (srht-git--endpoint instance "refs" name username query))
 
-(defun srht-git-repo-log (domain name &optional username query)
-  "List of the latest commit log for repository NAME from DOMAIN.
+(defun srht-git-repo-log (instance name &optional username query)
+  "List of the latest commit log for repository NAME from INSTANCE.
 If USERNAME is nil the authenticated user is assumed.
 QUERY is the query for the URI."
-  (srht-git--endpoint domain "log" name username query))
+  (srht-git--endpoint instance "log" name username query))
 
-(defun srht-git-repo-artifact (domain name ref body &optional username)
-  "Attaches a file artifact to the specified REF and repository NAME from DOMAIN.
+(defun srht-git-repo-artifact (instance name ref body &optional username)
+  "Attaches a file artifact to the specified REF and repository NAME from INSTANCE.
 Note: this endpoint does not accept JSON.  Submit your request
 as `multipart/form-data', with a single field: file in BODY."
-  (srht-git--endpoint-widen #'srht-git--artifact domain name ref username body))
+  (srht-git--endpoint-widen #'srht-git--artifact instance name ref username body))
 
-(defun srht-git-repo-log-ref (domain name ref &optional username query)
-  "List of the latest commit resources starting from the given REF and DOMAIN.
+(defun srht-git-repo-log-ref (instance name ref &optional username query)
+  "List of the latest commit resources starting from the given REF and INSTANCE.
 NAME is a repository name.  If USERNAME is nil the authenticated user
 is assumed.  QUERY is the query for the URI."
-  (srht-git--endpoint-widen #'srht-git-repo-log domain name ref username query))
+  (srht-git--endpoint-widen #'srht-git-repo-log instance name ref username query))
 
-(defun srht-git-repo-tree-ref (domain name ref &optional username query)
-  "Return the tree resource for the given REF from DOMAIN.
+(defun srht-git-repo-tree-ref (instance name ref &optional username query)
+  "Return the tree resource for the given REF from INSTANCE.
 Following the parent trees until the requested tree is found.
 In other words, this lists the contents of a subdirectory by path.
 NAME is a repository name.  If USERNAME is nil the authenticated user
 is assumed.  QUERY is the query for the URI."
-  (srht-git--endpoint-widen #'srht-git-repo-tree domain name ref username query))
+  (srht-git--endpoint-widen #'srht-git-repo-tree instance name ref username query))
 
-(defun srht-git-repo-tree-id (domain name id &optional username query)
-  "Return the tree resource with the given ID from DOMAIN.
+(defun srht-git-repo-tree-id (instance name id &optional username query)
+  "Return the tree resource with the given ID from INSTANCE.
 NAME is a repository name.  If USERNAME is nil the authenticated user
 is assumed.  QUERY is the query for the URI."
-  (srht-git--endpoint-widen #'srht-git-repo-tree domain name id username query))
+  (srht-git--endpoint-widen #'srht-git-repo-tree instance name id username query))
 
-(defun srht-git-repo-tree (domain name &optional username)
+(defun srht-git-repo-tree (instance name &optional username)
   "Return the tree resource for the latest commit to the default branch.
-DOMAIN is the domain name of the Sourcehut instance.
+INSTANCE is the instance name of the Sourcehut instance.
 NAME is a repository name.  If USERNAME is nil the authenticated user
 is assumed."
-  (srht-git--endpoint domain "tree" name username))
+  (srht-git--endpoint instance "tree" name username))
 
-(defun srht-git--candidates (domain)
-  "Return completion candidates for DOMAIN."
+(defun srht-git--candidates (instance)
+  "Return completion candidates for INSTANCE."
   (seq-map (pcase-lambda ((map (:created c)
                                (:visibility v)
                                (:name n)))
              (list n c v))
-           (srht-results-get domain
+           (srht-results-get instance
              (or srht-git-repos
                  (srht-put srht-git-repos
-                   domain (srht-retrive (srht-git-repos domain)))))))
+                   instance (srht-retrive (srht-git-repos instance)))))))
 
-(defun srht-git--annot (domain str)
-  "Function to add annotations in the completions buffer for STR and DOMAIN."
+(defun srht-git--annot (instance str)
+  "Function to add annotations in the completions buffer for STR and INSTANCE."
   (pcase-let (((seq _n created visibility)
-               (assoc str (srht-git--candidates domain))))
+               (assoc str (srht-git--candidates instance))))
     (srht-annotation str visibility created)))
 
-(defun srht-git--repo-name-read (domain)
+(defun srht-git--repo-name-read (instance)
   "Read a repository name in the minibuffer, with completion.
-DOMAIN is the domain name of the Sourcehut instance."
+INSTANCE is the instance name of the Sourcehut instance."
   (srht-read-with-annotaion "Select repository: "
-    (srht-git--candidates domain)
-    (lambda (str) (srht-git--annot domain str))
+    (srht-git--candidates instance)
+    (lambda (str) (srht-git--annot instance str))
     'sourcehut-git-repository))
 
 (defvar srht-git-repo-name-history nil
   "History variable.")
 
 ;;;###autoload
-(defun srht-git-repo-create (domain visibility name description)
-  "Create the NAME repository on an instance with the domain name DOMAIN.
+(defun srht-git-repo-create (instance visibility name description)
+  "Create the NAME repository on an instance with the instance name INSTANCE.
 Set VISIBILITY and DESCRIPTION."
   (interactive
-   (list (srht-read-domain "Instance: ")
+   (list (srht-read-instance "Instance: ")
          (srht-read-visibility "Visibility: ")
 	 (read-string "New git repository name: " nil
                       'srht-git-repo-name-history)
          (read-string "Repository description (markdown): ")))
-  (srht-create (srht-git-repo domain nil nil
+  (srht-create (srht-git-repo instance nil nil
                               :visibility visibility
                               :name name
                               :description description)
@@ -219,27 +219,27 @@ Set VISIBILITY and DESCRIPTION."
                                           (:owner (map (:canonical_name username))))
                                      results)
                                     (url (srht--make-uri
-                                          domain 'git
+                                          instance 'git
                                           (format "/%s/%s" username repo-name) nil)))
                          (srht-copy-url url)
                          (srht-browse-url url)
-                         (srht-retrive (srht-git-repos domain)
+                         (srht-retrive (srht-git-repos instance)
                                        :then (lambda (resp)
-                                               (srht-put srht-git-repos domain resp)))))))
+                                               (srht-put srht-git-repos instance resp)))))))
 
-(defun srht-git--find-info (domain repo-name)
-  "Find repository information by REPO-NAME from the DOMAIN instance."
+(defun srht-git--find-info (instance repo-name)
+  "Find repository information by REPO-NAME from the INSTANCE instance."
   (catch 'found
-    (seq-doseq (repo (plist-get (plist-get srht-git-repos domain) :results))
+    (seq-doseq (repo (plist-get (plist-get srht-git-repos instance) :results))
       (when (equal (cl-getf repo :name) repo-name)
         (throw 'found repo)))))
 
 ;;;###autoload
-(defun srht-git-repo-update (domain repo-name visibility new-name description)
-  "Update the REPO-NAME repository from the DOMAIN instance.
+(defun srht-git-repo-update (instance repo-name visibility new-name description)
+  "Update the REPO-NAME repository from the INSTANCE instance.
 Set VISIBILITY, NEW-NAME and DESCRIPTION."
   (interactive
-   (pcase-let* ((instance (srht-read-domain "Instance: "))
+   (pcase-let* ((instance (srht-read-instance "Instance: "))
                 (name (srht-git--repo-name-read instance))
                 ((map (:visibility v)
                       (:description d))
@@ -251,7 +251,7 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
                         'srht-git-repo-name-history)
            (read-string "Repository description (markdown): " d))))
   (when (yes-or-no-p (format "Update %s repository?" repo-name))
-    (srht-update (srht-git-repo domain repo-name nil
+    (srht-update (srht-git-repo instance repo-name nil
                                 :visibility visibility
                                 :name new-name
                                 :description description)
@@ -265,27 +265,27 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
                          ;;  :description nil
                          ;;  :visibility unlisted)
                          (message "Updated!")
-                         (srht-retrive (srht-git-repos domain)
+                         (srht-retrive (srht-git-repos instance)
                                        :then (lambda (resp)
-                                               (srht-put srht-git-repos domain resp)
+                                               (srht-put srht-git-repos instance resp)
                                                ))))))
 
 ;;;###autoload
-(defun srht-git-repo-delete (domain repo-name)
-  "Delete the REPO-NAME repository from the DOMAIN instance."
+(defun srht-git-repo-delete (instance repo-name)
+  "Delete the REPO-NAME repository from the INSTANCE instance."
   (interactive
-   (let ((instance (srht-read-domain "Instance: ")))
+   (let ((instance (srht-read-instance "Instance: ")))
      (list instance (srht-git--repo-name-read instance))))
   (when (yes-or-no-p
          (format "This action cannot be undone.\n Delete %s repository?" repo-name))
     (srht-delete
-     (srht-git-repo domain repo-name)
+     (srht-git-repo instance repo-name)
      :as 'string
      :then (lambda (_r)
              (srht-retrive
-              (srht-git-repos domain)
+              (srht-git-repos instance)
               :then (lambda (resp)
-                      (srht-put srht-git-repos domain resp)
+                      (srht-put srht-git-repos instance resp)
                       (message (format "Sourcehut %s git repository deleted!" repo-name)
                                )))))))
 

@@ -26,13 +26,13 @@
 (require 'srht)
 
 (defvar srht-paste-all-pastes nil
-  "Stores pastes plist of the form (:domain pastes ...).")
+  "Stores pastes plist of the form (:instance pastes ...).")
 
-(defun srht-paste--make-crud (domain path &optional query body)
-  "Make crud for paste service for the DOMAIN of the Sourcehut instance.
+(defun srht-paste--make-crud (instance path &optional query body)
+  "Make crud for paste service for the INSTANCE of the Sourcehut instance.
 PATH is the path for the URI.  BODY is the body sent to the URI.
 QUERY is the query for the URI."
-  (srht-generic-crud domain 'paste path query body))
+  (srht-generic-crud instance 'paste path query body))
 
 (cl-defun srht-paste-make (&key (visibility "unlisted") (filename 'null) contents)
   "Make paste parameters.
@@ -44,52 +44,52 @@ CONTENTS must be a UTF-8 encoded string; binary files are not allowed."
     (files . [((filename . ,filename)
                (contents . ,contents))])))
 
-(defun srht-pastes (domain &optional query)
-  "Get all pastes owned by the authenticated user and instance with DOMAIN.
+(defun srht-pastes (instance &optional query)
+  "Get all pastes owned by the authenticated user and instance with INSTANCE.
 QUERY is the query for the URI."
-  (srht-paste--make-crud domain "/api/pastes" query))
+  (srht-paste--make-crud instance "/api/pastes" query))
 
-(defun srht-paste-blob (domain sha)
-  "Retrieve a blob resource with the hash SHA from the DOMAIN instance."
-  (srht-paste--make-crud domain (format "/api/blobs/%s" sha)))
+(defun srht-paste-blob (instance sha)
+  "Retrieve a blob resource with the hash SHA from the INSTANCE instance."
+  (srht-paste--make-crud instance (format "/api/blobs/%s" sha)))
 
-(defun srht-paste--domain-results-get (domain pastes)
+(defun srht-paste--instance-results-get (instance pastes)
   "Extract the value for the :results property.
-For the existing PASTES for the DOMAIN domain name."
+For the existing PASTES for the INSTANCE instance name."
   (declare (indent 1))
-  (plist-get (plist-get pastes (intern domain)) :results))
+  (plist-get (plist-get pastes (intern instance)) :results))
 
-(defun srht-paste--candidates (domain)
-  "Return completion candidates for DOMAIN."
+(defun srht-paste--candidates (instance)
+  "Return completion candidates for INSTANCE."
   (seq-map (pcase-lambda ((map (:created c)
                                (:visibility v)
                                (:sha sha)
                                (:files (seq (map (:filename fn))))))
              (list fn c v sha))
-           (srht-results-get domain
+           (srht-results-get instance
              (or srht-paste-all-pastes
                  (srht-put srht-paste-all-pastes
-                   domain (srht-retrive (srht-pastes domain)))))))
+                   instance (srht-retrive (srht-pastes instance)))))))
 
-(defun srht-paste--annot (domain str)
-  "Function to add annotations in the completions buffer for STR and DOMAIN."
+(defun srht-paste--annot (instance str)
+  "Function to add annotations in the completions buffer for STR and INSTANCE."
   (pcase-let (((seq _f created visibility)
-               (assoc str (srht-paste--candidates domain))))
+               (assoc str (srht-paste--candidates instance))))
     (srht-annotation str visibility created)))
 
-(defun srht-paste--sha (domain)
+(defun srht-paste--sha (instance)
   "Read a FILENAME in the minibuffer, with completion and return SHA.
-DOMAIN is the domain name of the Sourcehut instance."
-  (let ((cand (srht-paste--candidates domain)))
+INSTANCE is the instance name of the Sourcehut instance."
+  (let ((cand (srht-paste--candidates instance)))
     (car (last (assoc
                 (srht-read-with-annotaion
                     "Select paste: " cand
-                    (lambda (str) (srht-paste--annot domain str))
+                    (lambda (str) (srht-paste--annot instance str))
                     'sourcehut-paste)
                 cand)))))
 
-(defun srht-paste (domain &optional sha &rest details)
-  "Create, retrieve or delete a paste from DOMAIN.
+(defun srht-paste (instance &optional sha &rest details)
+  "Create, retrieve or delete a paste from INSTANCE.
 
 When retrieving or deleting a paste SHA must the the hash
 corresponding to the paste.
@@ -98,9 +98,9 @@ When creating a new paste, SHA must be nil and one has to
 specify the DETAILS (see `srht-paste-make') of the paste."
   (cond
    ((stringp sha)
-    (srht-paste--make-crud domain (format "/api/pastes/%s" sha)))
+    (srht-paste--make-crud instance (format "/api/pastes/%s" sha)))
    ((stringp (plist-get details :contents))
-    (srht-paste--make-crud domain "/api/pastes" nil (apply #'srht-paste-make details)))))
+    (srht-paste--make-crud instance "/api/pastes" nil (apply #'srht-paste-make details)))))
 
 (defun srht-paste--get-content ()
   "Extract the content we want to paste.
@@ -111,17 +111,17 @@ the whole buffer."
     (buffer-string)))
 
 ;;;###autoload
-(defun srht-paste-region (domain visibility filename)
-  "Paste region or buffer to Sourcehut instance with DOMAIN.
+(defun srht-paste-region (instance visibility filename)
+  "Paste region or buffer to Sourcehut instance with INSTANCE.
 Set FILENAME and VISIBILITY."
   (interactive
-   (list (srht-read-domain "Instance: ")
+   (list (srht-read-instance "Instance: ")
          (srht-read-visibility "Visibility: ")
 	 (read-string (format "Filename (default: %s): " (buffer-name))
 		      nil nil (buffer-name))))
   (let ((content (srht-paste--get-content)))
     (srht-create
-     (srht-paste domain nil
+     (srht-paste instance nil
                  :visibility visibility
                  :filename filename
                  :contents content)
@@ -131,40 +131,40 @@ Set FILENAME and VISIBILITY."
                           (:user (map (:canonical_name username))))
                      results)
                     (url (srht--make-uri
-                          domain 'paste (format "/%s/%s" username sha) nil)))
+                          instance 'paste (format "/%s/%s" username sha) nil)))
          (srht-copy-url url)
          (srht-browse-url url)
-         (srht-retrive (srht-pastes domain)
+         (srht-retrive (srht-pastes instance)
                        :then (lambda (resp)
-                               (srht-put srht-paste-all-pastes domain resp))))))))
+                               (srht-put srht-paste-all-pastes instance resp))))))))
 
 ;;;###autoload
-(defun srht-paste-delete (domain sha)
-  "Detete paste with SHA from the DOMAIN instance."
+(defun srht-paste-delete (instance sha)
+  "Detete paste with SHA from the INSTANCE instance."
   (interactive
-   (let ((instance (srht-read-domain "Instance: ")))
+   (let ((instance (srht-read-instance "Instance: ")))
      (list instance (srht-paste--sha instance))))
   (srht-delete
-   (srht-paste domain sha)
+   (srht-paste instance sha)
    :as 'string
    :then (lambda (_r)
            (srht-retrive
-            (srht-pastes domain)
+            (srht-pastes instance)
             :then (lambda (resp)
-                    (srht-put srht-paste-all-pastes domain resp)
+                    (srht-put srht-paste-all-pastes instance resp)
                     (message "Deleted!"))))))
 
 ;;;###autoload
-(defun srht-paste-copy-url (domain)
+(defun srht-paste-copy-url (instance)
   "Copy selected paste URL to clipboard.
-DOMAIN (see `srht-read-domain')."
-  (interactive (list (srht-read-domain "Instance: ")))
+INSTANCE (see `srht-read-instance')."
+  (interactive (list (srht-read-instance "Instance: ")))
   (when (string-empty-p srht-username)
     (error "`srht-username' must be set"))
-  (let* ((sha (srht-paste--sha domain))
+  (let* ((sha (srht-paste--sha instance))
          (username (concat "~" (string-trim-left srht-username "~")))
          (url (srht--make-uri
-               domain 'paste (format "/%s/%s" username sha) nil)))
+               instance 'paste (format "/%s/%s" username sha) nil)))
     (srht-copy-url url)
     (srht-browse-url url)))
 

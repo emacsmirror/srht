@@ -25,21 +25,21 @@
 
 (require 'srht)
 
-(defun srht-builds--make-crud (domain path &optional query body)
-  "Make a crud for the builds service for the DOMAIN of the Sourcehut instance.
+(defun srht-builds--make-crud (instance path &optional query body)
+  "Make a crud for the builds service for the INSTANCE of the Sourcehut instance.
 PATH is the path for the URI.  BODY is the body sent to the URI.
 QUERY is the query for the URI.  To retrieve the next page of results,
 add start=:id to your QUERY, using the :id given by \"next\"."
   (declare (indent 1))
-  (srht-generic-crud domain 'builds path query body))
+  (srht-generic-crud instance 'builds path query body))
 
-(defun srht-builds-jobs (domain &optional query details)
-  "Return a paginated list of job resources from the DOMAIN instance.
+(defun srht-builds-jobs (instance &optional query details)
+  "Return a paginated list of job resources from the INSTANCE instance.
 Or inserts a new job into the job queue with POST request.
 To retrieve the next page of results, add start=:id to your QUERY,
 using the :id given by \"next\". When insert a new job, you must specify
 DETAILS (see `srht-builds-make') and omit query."
-  (srht-builds--make-crud domain "/api/jobs" query details))
+  (srht-builds--make-crud instance "/api/jobs" query details))
 
 (cl-defun srht-builds-make (&key manifest note tags
                                  (execute "true")
@@ -57,35 +57,35 @@ build immediately.  SECRTETS - true to provide secrets during the build."
     (execute . ,execute)
     (secrtets . ,secrtets)))
 
-(defun srht-builds-job (domain id)
-  "Retrieve information about a job by its ID from the DOMAIN instance."
-  (srht-builds--make-crud domain (format "/api/jobs/%d" id)))
+(defun srht-builds-job (instance id)
+  "Retrieve information about a job by its ID from the INSTANCE instance."
+  (srht-builds--make-crud instance (format "/api/jobs/%d" id)))
 
-(defun srht-builds-job-artifacts (domain id &optional query)
+(defun srht-builds-job-artifacts (instance id &optional query)
   "Retrieve a paginated list of artifact resources created by job with ID.
 To retrieve the next page of results, add start=:id to your QUERY, using
-the :id given by \"next\".  DOMAIN is the domain name of the Sourcehut
+the :id given by \"next\".  INSTANCE is the instance name of the Sourcehut
 instance."
-  (srht-builds--make-crud domain
+  (srht-builds--make-crud instance
     (format "/api/jobs/%d/artifacts" id) query))
 
-(defun srht-builds-job-manifest (domain id)
+(defun srht-builds-job-manifest (instance id)
   "Retrieve a build manifest as plain text for a job with ID.
-DOMAIN is the domain name of the Sourcehut instance."
-  (srht-builds--make-crud domain
+INSTANCE is the instance name of the Sourcehut instance."
+  (srht-builds--make-crud instance
     (format "/api/jobs/%d/manifest" id)))
 
-(defun srht-builds-job-start (domain id)
+(defun srht-builds-job-start (instance id)
   "Start a job with ID that was created with execute=false.
 Returns an empty JSON object when successful.
-DOMAIN is the domain name of the Sourcehut instance."
-  (srht-builds--make-crud domain
+INSTANCE is the instance name of the Sourcehut instance."
+  (srht-builds--make-crud instance
     (format "/api/jobs/%d/start" id) nil "{}"))
 
-(defun srht-builds-job-cancel (domain id)
+(defun srht-builds-job-cancel (instance id)
   "Cancels a running job with ID.  Return an empty JSON object when successful.
-DOMAIN is the domain name of the Sourcehut instance."
-  (srht-builds--make-crud domain
+INSTANCE is the instance name of the Sourcehut instance."
+  (srht-builds--make-crud instance
     (format "/api/jobs/%d/cancel" id) nil "{}"))
 
 (provide 'srht-builds)

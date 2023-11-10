@@ -33,6 +33,7 @@
 (require 'cl-lib)
 (require 'plz)
 (require 'rx)
+(require 'srht-gql)
 (require 'auth-source)
 
 (defgroup srht nil
@@ -40,9 +41,9 @@
   :prefix "srht"
   :group 'comm)
 
-(defcustom srht-domains '("sr.ht")
+(defcustom srht-instances '("sr.ht")
   "Sourcehut instance domain names."
-  :type '(list (repeat :tag "Domain"
+  :type '(list (repeat :tag "Instance"
 		       :inline t
 		       (string :format "%v")))
   :group 'srht)
@@ -63,14 +64,14 @@ It is necessary to use Oauth personal token not Oauth2."
   :type 'boolean
   :group 'srht)
 
-(defun srht-token ()
+(defun srht-token (host)
   "Lookup variable `srht-token' if needed and return it.
 If variable `srht-token' is nil or cannot be looked up or is empty, signal
 an error."
   (if srht-token
       srht-token
     (let ((token (when-let ((f (plist-get
-                                (car (auth-source-search :host "sr.ht"))
+                                (car (auth-source-search :host host))
                                 :secret)))
                    (funcall f))))
       (unless token
@@ -97,13 +98,13 @@ PATH should be strings or nil.  QUERY should be strings or nil."
      (_ (error "Expected absolute path starting with \"/\" or empty string: %s" path)))
    (if query (concat "?" query) "")))
 
-(defun srht--make-uri (domain service path query)
-  "Construct a URI for making a request to Sourcehut DOMAIN.
+(defun srht--make-uri (instance service path query)
+  "Construct a URI for making a request to Sourcehut INSTANCE.
 SERVICE is name of the service, PATH is the path for the URI, and
 QUERY is the query for the URI."
-  (cl-assert (and (not (string-empty-p domain)) domain)
-             nil "Require domain")
-  (let ((host (format "%s.%s" service domain)))
+  (cl-assert (and (not (string-empty-p instance)) instance)
+             nil "Require instance")
+  (let ((host (format "%s.%s" service instance)))
     (srht--build-uri-string
      'https :host host :path path :query query)))
 
@@ -127,7 +128,7 @@ narrowed to the response body."
     (json-read)))
 
 ;; TODO add body-type to use with `multipart/from-data'
-(cl-defun srht--api-request (method &key domain service path query
+(cl-defun srht--api-request (method &key instance service path query
                                     body (else #'srht--else)
                                     form (then 'sync) (as #'srht--as)
                                     &allow-other-keys)
@@ -135,7 +136,7 @@ narrowed to the response body."
 Return the curl process object or, for a synchronous request, the
 selected result.
 
-DOMAIN is the domain name of the Sourcehut instance.
+INSTANCE is the instance name of the Sourcehut instance.
 
 HEADERS may be an alist of extra headers to send with the
 request.
@@ -151,24 +152,24 @@ THEN (see `plz').
 THEN is a callback function, which is called in the response data.
 ELSE is an optional callback function called when the request
 fails with one argument, a `plz-error' struct."
-  (let ((uri (srht--make-uri domain service path query))
+  (let ((uri (srht--make-uri instance service path query))
         (content-type (or form "application/json")))
     (plz method uri
       :headers `(,(cons "Content-Type" content-type)
-                 ,(cons "Authorization" (concat "token " (srht-token))))
+                 ,(cons "Authorization" (concat "token " (srht-token "sr.ht"))))
       :body body
       :then then
       :else else
       :as as)))
 
-(defun srht-generic-crud (domain service path &optional query body form)
+(defun srht-generic-crud (instance service path &optional query body form)
   "Return a list of arguments to pass to `srht--make-crud-request'.
-DOMAIN is the domain name of the Sourcehut instance.
+INSTANCE is the instance name of the Sourcehut instance.
 SERVICE is the service to used, and PATH is the path for the URI.
 BODY is optional, if it is an empty list, the resulting list will not
 contain the body at all.  FORM is optional.  QUERY is the query for the
 URI."
-  (let ((crud `(:domain ,domain :service ,service
+  (let ((crud `(:instance ,instance :service ,service
                 :path ,path :query , query :form ,form)))
     (if body
         (append crud `(:body ,(if form body (json-encode body))))
@@ -234,29 +235,29 @@ Bind it with the ‘pcase’ PATTERN and do BODY."
                 (,pattern (json-read-from-string ,string)))
      ,@body))
 
-(defun srht-read-domain (prompt)
-  "Read domain name of the Sourcehut instance from `srht-domains' collection.
+(defun srht-read-instance (prompt)
+  "Read instance name of the Sourcehut instance from `srht-instances' collection.
 If the collection contains only one name, return it without completion.
 PROMPT is a string to prompt with; normally it ends in a colon and a space."
-  (if (eq (length srht-domains) 1)
-      (car srht-domains)
-    (completing-read prompt srht-domains nil t)))
+  (if (eq (length srht-instances) 1)
+      (car srht-instances)
+    (completing-read prompt srht-instances nil t)))
 
 (defun srht-read-visibility (prompt &optional initial-input)
   "Select a visibility through `completing-read'.
 PROMPT, INITIAL-INPUT see `completing-read' doc."
   (completing-read prompt '("private" "public" "unlisted") nil t initial-input))
 
-(defun srht-results-get (domain plist)
+(defun srht-results-get (instance plist)
   "Extract the value for the :results property.
-For the existing PLIST for the DOMAIN domain name."
+For the existing PLIST for the INSTANCE instance name."
   (declare (indent 1))
-  (plist-get (plist-get plist (intern domain)) :results))
+  (plist-get (plist-get plist (intern instance)) :results))
 
-(defmacro srht-put (plist domain val)
-  "Change value in PLIST of DOMAIN to VAL if is not nil."
+(defmacro srht-put (plist instance val)
+  "Change value in PLIST of INSTANCE to VAL if is not nil."
   (declare (indent 1))
-  `(when ,val (setq ,plist (plist-put ,plist (intern ,domain) ,val))))
+  `(when ,val (setq ,plist (plist-put ,plist (intern ,instance) ,val))))
 
 (defun srht-annotation (str visibility created)
   "Return an annotation for STR using VISIBILITY and CREATED."
