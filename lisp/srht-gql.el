@@ -39,8 +39,10 @@
 
 (defun srht-gql--string-join (plist)
   (let ((lst (map-apply (lambda (kw val)
-                          (concat (substring (symbol-name kw) 1) ": "
-                                  (srht-gql--string val)))
+                          (if val
+                              (concat (substring (symbol-name kw) 1) ": "
+                                      (srht-gql--string val))
+                            ""))
                         plist)))
     (mapconcat #'identity lst ", ")))
 
@@ -71,6 +73,12 @@
         (args (srht-gql--serialize-args (plist-get query :arguments)))
         (fields (srht-gql--serialize-fields (plist-get query :fields))))
     (concat "{" q args fields"}")))
+
+(defun srht-gql-query (base-query)
+  (json-encode `(("query" . ,(srht-gql-serialize base-query)))))
+
+(defun srht-gql-mutation (base-query)
+  (json-encode `(("mutation" . ,(srht-gql-serialize base-query)))))
 
 (provide 'srht-gql)
 ;;; srht-gql.el ends here
