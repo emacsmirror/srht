@@ -33,7 +33,6 @@
 (require 'cl-lib)
 (require 'plz)
 (require 'rx)
-(require 'srht-gql)
 (require 'auth-source)
 
 (defgroup srht nil
@@ -158,6 +157,22 @@ fails with one argument, a `plz-error' struct."
       :headers `(,(cons "Content-Type" content-type)
                  ,(cons "Authorization" (concat "token " (srht-token "sr.ht"))))
       :body body
+      :then then
+      :else else
+      :as as)))
+
+
+(cl-defun srht--gql-api-request (&key instance service query form token-host
+                                      (else #'srht--else)
+                                      (then 'sync)
+                                      (as #'srht--as)
+                                      &allow-other-keys)
+  (let ((uri (srht--make-uri instance service "/query" nil))
+        (content-type (or form "application/json")))
+    (plz 'post uri
+      :headers `(,(cons "Content-Type" content-type)
+                 ,(cons "Authorization" (format "Bearer %s" (srht-token token-host))))
+      :body query
       :then then
       :else else
       :as as)))
