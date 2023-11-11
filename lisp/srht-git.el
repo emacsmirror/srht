@@ -26,9 +26,58 @@
 ;;; Code:
 
 (require 'srht)
+(require 'srht-gql)
 
-(defvar srht-git-repos nil
+(defvar srht-git-repositories nil
   "Authenticated user repos plist of the form (:instance repos ...).")
+
+(defvar srht-git-cursor nil
+  "Query result is paginated, so it has a cursor.
+If you pass this value into repositories(cursor:\"...\") in a
+subsequent request, you'll get the next page.")
+
+(defconst srht-git-gql-base-query
+  '(:query me
+    :fields
+    (canonicalName
+     (:type repositories
+      :fields
+      (cursor
+       (:type results
+        :fields(id name created updated visibility)))))))
+
+(defun srht-git--gql-next-query (cursor)
+  "Created next query from CURSOR."
+  (pcase-let* ((plist (copy-sequence srht-git-gql-base-query))
+               ((map (:fields (seq n lst))) plist))
+    (plist-put
+     plist
+     :fields `(,n ,(plist-put lst :arguments `(:cursor ,cursor))))))
+
+
+(cl-defun srht-git-repos (instance &optional (callback 'sync))
+  "Retrive list of repositories from INSTANCE.
+CALLBACK is called when the object has been completely retrieved.
+Or CALLBACK may be `sync' to make a synchronous request."
+  (declare (indent 1))
+  (named-let loop ((query (srht-gql-query
+                           (srht-git--gql-next-query nil)))
+                   (cursor "") (ac nil))
+    (if cursor
+        (pcase-let (((map (:data
+                           (map (:me
+                                 (map (:repositories
+                                       (map (:cursor pointer)
+                                            (:results results))))))))
+                     (srht--gql-api-request
+                      :instance instance
+                      :service 'git
+                      :then callback
+                      :token-host "git.sr.ht"
+                      :query query)))
+          (loop (srht-gql-query (srht-git--gql-next-query pointer))
+                pointer (append results ac)))
+      ac)))
 
 (defun srht-git--make-crud (instance path &optional query body form)
   "Make a crud for the git service for the INSTANCE of the Sourcehut instance.
@@ -44,16 +93,6 @@ If USERNAME is nil, the authenticated user is assumed."
                   (concat "/api/user/~" (string-trim-left username "~"))
                 "/api/user")))
     (srht-git--make-crud instance path)))
-
-(defun srht-git-repos (instance &optional username query)
-  "Retrive list of repository resources owned by this USERNAME from INSTANCE.
-If USERNAME is nil the authenticated user is assumed.
-QUERY is the query for the URI.  To retrieve the next page of results,
-add start=:id to your QUERY, using the :id given by \"next\"."
-  (let ((path (if username
-                  (format "/api/~%s/repos" (string-trim-left username "~"))
-                "/api/repos")))
-    (srht-git--make-crud instance path query)))
 
 (cl-defun srht-git-make (&key visibility description name)
   "Make paste parameters.
@@ -178,10 +217,11 @@ is assumed."
                                (:visibility v)
                                (:name n)))
              (list n c v))
-           (srht-results-get instance
-             (or srht-git-repos
-                 (srht-put srht-git-repos
-                   instance (srht-retrive (srht-git-repos instance)))))))
+           (plist-get
+            (or srht-git-repositories
+                (srht-put srht-git-repositories
+                  instance (srht-git-repos instance)))
+            (intern instance))))
 
 (defun srht-git--annot (instance str)
   "Function to add annotations in the completions buffer for STR and INSTANCE."
@@ -223,14 +263,15 @@ Set VISIBILITY and DESCRIPTION."
                                           (format "/%s/%s" username repo-name) nil)))
                          (srht-copy-url url)
                          (srht-browse-url url)
-                         (srht-retrive (srht-git-repos instance)
-                                       :then (lambda (resp)
-                                               (srht-put srht-git-repos instance resp)))))))
+                         (srht-git-repos instance
+                           (lambda (resp)
+                             (srht-put srht-git-repositories instance resp)))
+                         ))))
 
 (defun srht-git--find-info (instance repo-name)
   "Find repository information by REPO-NAME from the INSTANCE instance."
   (catch 'found
-    (seq-doseq (repo (plist-get (plist-get srht-git-repos instance) :results))
+    (seq-doseq (repo (plist-get srht-git-repositories instance))
       (when (equal (cl-getf repo :name) repo-name)
         (throw 'found repo)))))
 
@@ -265,10 +306,10 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
                          ;;  :description nil
                          ;;  :visibility unlisted)
                          (message "Updated!")
-                         (srht-retrive (srht-git-repos instance)
-                                       :then (lambda (resp)
-                                               (srht-put srht-git-repos instance resp)
-                                               ))))))
+                         (srht-git-repos instance
+                           (lambda (resp)
+                             (srht-put srht-git-repositories instance resp)))
+                         ))))
 
 ;;;###autoload
 (defun srht-git-repo-delete (instance repo-name)
@@ -282,12 +323,11 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
      (srht-git-repo instance repo-name)
      :as 'string
      :then (lambda (_r)
-             (srht-retrive
-              (srht-git-repos instance)
-              :then (lambda (resp)
-                      (srht-put srht-git-repos instance resp)
-                      (message (format "Sourcehut %s git repository deleted!" repo-name)
-                               )))))))
+             (srht-git-repos instance
+               (lambda (resp)
+                 (srht-put srht-git-repositories instance resp)
+                 (message (format "Sourcehut %s git repository deleted!" repo-name))))
+             ))))
 
 (provide 'srht-git)
 ;;; srht-git.el ends here
