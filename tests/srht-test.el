@@ -32,7 +32,7 @@
 
 (ert-deftest srht-paste ()
   (should (equal (srht-paste "sr.ht" "489fa091d5c6d5751769375a6f0e00447347adff")
-                 '(:domain "sr.ht"
+                 '(:instance "sr.ht"
                    :service paste
                    :path "/api/pastes/489fa091d5c6d5751769375a6f0e00447347adff"
                    :query nil
