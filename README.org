@@ -29,14 +29,14 @@ guix package -f guix.scm
 installing it, place files from /lisp folder in =load-path=.
 
 * Setup
-To use this client, you need to [[https://meta.sr.ht/oauth/personal-token][generate]] a personal access token (Oauth not
-Oauth2). This token will have unrestricted access to all sr.ht APIs and can be
-used like a normal access token to authenticate API requests.
+To use this client, you need to generate a personal access tokens ([[https://meta.sr.ht/oauth/personal-token][Oauth]] and
+[[https://meta.sr.ht/oauth2][Oauth2]]). Oauth token will have unrestricted access to all sr.ht APIs and can be
+used like a normal access token to authenticate legacy API requests.
 
-After creating the token:
-
+After creating the tokens:
+** oauth token
 #+begin_src elisp :lexical t
-(setq srht-token TOKEN)
+(setq srht-token OAUTH-TOKEN)
 #+end_src
 
 It is also possible to store the token using =auth-source.el=, the host must be
@@ -46,8 +46,17 @@ set to sr.ht.
 machine sr.ht password TOKEN
 #+end_example
 
-You also need to set srht-username:
+** oauth2 token
+To store the token use =auth-source.el=, the host must be set to git.sr.ht.
 
+#+begin_example
+machine git.sr.ht password TOKEN
+#+end_example
+Strongly encouraged for the user to limit the scope of access that is provided
+by an authentication token.
+
+** rest
+You also need to set srht-username:
 #+begin_src elisp :lexical t
 (setq srht-username USERNAME)
 #+end_src

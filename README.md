@@ -35,18 +35,34 @@ installing it, place files from /lisp folder in `load-path`.
 
 # Setup
 
-To use this client, you need to [generate](https://meta.sr.ht/oauth/personal-token) a personal access token (Oauth not
-Oauth2). This token will have unrestricted access to all sr.ht APIs and can be
-used like a normal access token to authenticate API requests.
+To use this client, you need to generate a personal access tokens ([Oauth](https://meta.sr.ht/oauth/personal-token) and
+[Oauth2](https://meta.sr.ht/oauth2)). Oauth token will have unrestricted access to all sr.ht APIs and can be
+used like a normal access token to authenticate legacy API requests.
 
-After creating the token:
+After creating the tokens:
 
-    (setq srht-token TOKEN)
+
+## oauth token
+
+    (setq srht-token OAUTH-TOKEN)
 
 It is also possible to store the token using `auth-source.el`, the host must be
 set to sr.ht.
 
     machine sr.ht password TOKEN
+
+
+## oauth2 token
+
+To store the token use `auth-source.el`, the host must be set to git.sr.ht.
+
+    machine git.sr.ht password TOKEN
+
+Strongly encouraged for the user to limit the scope of access that is provided
+by an authentication token.
+
+
+## rest
 
 You also need to set srht-username:
 
@@ -125,3 +141,4 @@ so may contact [emacs-devel@gnu.org](mailto:emacs-devel@gnu.org) to request the 
 # License
 
 GPLv3
+
