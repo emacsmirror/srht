@@ -5,7 +5,7 @@
 <a href="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml"><img alt="Build" src="https://builds.sr.ht/~akagi/srht.el/commits/master/.build.yml.svg"/></a>
 
 
-### Version 0.2
+### Version 0.3
 
 
 # About
@@ -59,7 +59,9 @@ To store the token use `auth-source.el`, the host must be set to git.sr.ht.
     machine git.sr.ht password TOKEN
 
 Strongly encouraged for the user to limit the scope of access that is provided
-by an authentication token.
+by an authentication token.  Currently srht-git.el requires at least
+REPOSITORIES, PROFILE scopes for git.sr.ht. When creating an oauth2 token, you
+can select scopes from the "Limit scope of access grant" menu.
 
 
 ## rest
