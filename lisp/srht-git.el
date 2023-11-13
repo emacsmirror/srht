@@ -54,8 +54,7 @@ subsequent request, you'll get the next page.")
      plist
      :fields `(,n ,(plist-put lst :arguments `(:cursor ,cursor))))))
 
-
-(cl-defun srht-git-repos (instance &optional (callback 'sync))
+(defun srht-git-repos (instance)
   "Retrive list of repositories from INSTANCE.
 CALLBACK is called when the object has been completely retrieved.
 Or CALLBACK may be `sync' to make a synchronous request."
@@ -72,7 +71,6 @@ Or CALLBACK may be `sync' to make a synchronous request."
                      (srht--gql-api-request
                       :instance instance
                       :service 'git
-                      :then callback
                       :token-host "git.sr.ht"
                       :query query)))
           (loop (srht-gql-query (srht-git--gql-next-query pointer))
@@ -263,9 +261,8 @@ Set VISIBILITY and DESCRIPTION."
                                           (format "/%s/%s" username repo-name) nil)))
                          (srht-copy-url url)
                          (srht-browse-url url)
-                         (srht-git-repos instance
-                           (lambda (resp)
-                             (srht-put srht-git-repositories instance resp)))
+                         (srht-put srht-git-repositories
+                           instance (srht-git-repos instance))
                          ))))
 
 (defun srht-git--find-info (instance repo-name)
@@ -306,9 +303,8 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
                          ;;  :description nil
                          ;;  :visibility unlisted)
                          (message "Updated!")
-                         (srht-git-repos instance
-                           (lambda (resp)
-                             (srht-put srht-git-repositories instance resp)))
+                         (srht-put srht-git-repositories
+                           instance (srht-git-repos instance))
                          ))))
 
 ;;;###autoload
@@ -323,10 +319,10 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
      (srht-git-repo instance repo-name)
      :as 'string
      :then (lambda (_r)
-             (srht-git-repos instance
-               (lambda (resp)
-                 (srht-put srht-git-repositories instance resp)
-                 (message (format "Sourcehut %s git repository deleted!" repo-name))))
+             (message
+              (format "Sourcehut %s git repository deleted!" repo-name))
+             (srht-put srht-git-repositories
+               instance (srht-git-repos instance))
              ))))
 
 (provide 'srht-git)
