@@ -283,5 +283,69 @@ For the existing PLIST for the INSTANCE instance name."
     (concat blank visibility (make-string (- 12 (length visibility)) ws-char)
             created)))
 
+(declare-function iso8601-parse "iso8601" (string &optional form))
+
+(defun srht--format-date (str)
+  "PARSE an ISO 8601 STR.
+Return string in format DAY.MONTH.YEAR."
+  (pcase-let (((seq _sec _min _hour day month year)
+               (iso8601-parse str)))
+    (format "%02d.%02d.%02d" day month year)))
+
+(defalias 'srht--make-vtable
+  (if (and (require 'vtable nil t)
+           (fboundp 'make-vtable))
+      #'make-vtable
+    (lambda (&rest _args)
+      (error "Require vtable"))))
+
+(defalias 'srht--vtable-colum
+  (if (and (require 'vtable nil t)
+           (fboundp 'vtable-column))
+      #'vtable-column
+    (lambda (&rest _args)
+      (error "Require vtable"))))
+
+(defalias 'srht--define-keymap
+  (if (and (require 'keymap nil t)
+           (fboundp 'define-keymap))
+      #'define-keymap
+    (lambda (&rest _args)
+      (error "Require define-keymap"))))
+
+(defun srht--view (instance repositories &optional actions)
+  "Display a list of Sourcehut INSTANCE REPOSITORIES.
+ACTIONS are simple commands that will be called with the
+object under point."
+  (declare (indent 2))
+  (let ((buffer (get-buffer-create "*Sourcehut repositories*")))
+    (with-current-buffer buffer
+      (srht--make-vtable
+       :columns '("Name"
+                  (:name "Visibility"
+                   :formatter (lambda (val) (when val (downcase val))))
+                  (:name "Created"
+                   :formatter srht-git--format-date
+                   :width 10)
+                  (:name "Updated"
+                   :formatter srht-git--format-date
+                   :width 10))
+       :objects (plist-get repositories (intern instance))
+       :getter (lambda (object column vtable)
+                 (pcase (srht--vtable-colum vtable column)
+                   ("Name" (plist-get object :name))
+                   ("Visibility" (plist-get object :visibility))
+                   ("Created" (plist-get object :created))
+                   ("Updated" (plist-get object :updated))))
+       :separator-width 5
+       :actions actions
+       :keymap (srht--define-keymap
+                 "q" #'kill-current-buffer
+                 "n" #'next-line
+                 "p" #'previous-line))
+      (read-only-mode)
+      (hl-line-mode))
+    (switch-to-buffer buffer)))
+
 (provide 'srht)
 ;;; srht.el ends here

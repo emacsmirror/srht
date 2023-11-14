@@ -325,5 +325,16 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
                instance (srht-git-repos instance))
              ))))
 
+;;;###autoload
+(defun srht-git-repos-list (instance)
+  "Display a list of Sourcehut INSTANCE git repositories."
+  (interactive
+   (list (srht-read-instance "Instance: ")))
+  (unless (fboundp 'make-vtable)
+    (error "Vtable required"))
+  (srht--view instance srht-git-repositories
+    `("d" (lambda (obj)
+            (srht-git-repo-delete ,instance (plist-get obj :name))))))
+
 (provide 'srht-git)
 ;;; srht-git.el ends here
