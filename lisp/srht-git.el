@@ -44,7 +44,7 @@ subsequent request, you'll get the next page.")
       :fields
       (cursor
        (:type results
-        :fields(id name created updated visibility)))))))
+        :fields(id name description created updated visibility)))))))
 
 (defun srht-git--gql-next-query (cursor)
   "Created next query from CURSOR."
