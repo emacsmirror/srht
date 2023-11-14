@@ -325,10 +325,10 @@ object under point."
                   (:name "Visibility"
                    :formatter (lambda (val) (when val (downcase val))))
                   (:name "Created"
-                   :formatter srht-git--format-date
+                   :formatter srht--format-date
                    :width 10)
                   (:name "Updated"
-                   :formatter srht-git--format-date
+                   :formatter srht--format-date
                    :width 10))
        :objects (plist-get repositories (intern instance))
        :getter (lambda (object column vtable)
