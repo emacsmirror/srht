@@ -79,6 +79,12 @@ an error."
         (error "srht-token must not be empty"))
       token)))
 
+(defmacro srht-with-no-message (&rest body)
+  "Evaluate BODY with messages are not displayed."
+  `(let ((inhibit-message t)
+         (message-log-max nil))
+     ,@body))
+
 (cl-defun srht--build-uri-string (scheme &key host path query)
   "Construct a URI string.
 SCHEME should be a symbol.  HOST should be strings or nil
@@ -155,7 +161,9 @@ fails with one argument, a `plz-error' struct."
         (content-type (or form "application/json")))
     (plz method uri
       :headers `(,(cons "Content-Type" content-type)
-                 ,(cons "Authorization" (concat "token " (srht-token "sr.ht"))))
+                 ,(cons "Authorization"
+                        (concat "token " (srht-with-no-message
+                                          (srht-token "sr.ht")))))
       :body body
       :then then
       :else else
@@ -171,7 +179,9 @@ fails with one argument, a `plz-error' struct."
         (content-type (or form "application/json")))
     (plz 'post uri
       :headers `(,(cons "Content-Type" content-type)
-                 ,(cons "Authorization" (format "Bearer %s" (srht-token token-host))))
+                 ,(cons "Authorization"
+                        (format "Bearer %s" (srht-with-no-message
+                                             (srht-token token-host)))))
       :body query
       :then then
       :else else
@@ -320,29 +330,30 @@ object under point."
   (declare (indent 2))
   (let ((buffer (get-buffer-create "*Sourcehut repositories*")))
     (with-current-buffer buffer
-      (srht--make-vtable
-       :columns '("Name"
-                  (:name "Visibility"
-                   :formatter (lambda (val) (when val (downcase val))))
-                  (:name "Created"
-                   :formatter srht--format-date
-                   :width 10)
-                  (:name "Updated"
-                   :formatter srht--format-date
-                   :width 10))
-       :objects (plist-get repositories (intern instance))
-       :getter (lambda (object column vtable)
-                 (pcase (srht--vtable-colum vtable column)
-                   ("Name" (plist-get object :name))
-                   ("Visibility" (plist-get object :visibility))
-                   ("Created" (plist-get object :created))
-                   ("Updated" (plist-get object :updated))))
-       :separator-width 5
-       :actions actions
-       :keymap (srht--define-keymap
-                 "q" #'kill-current-buffer
-                 "n" #'next-line
-                 "p" #'previous-line))
+      (let ((inhibit-read-only t))
+        (srht--make-vtable
+         :columns '("Name"
+                    (:name "Visibility"
+                     :formatter (lambda (val) (when val (downcase val))))
+                    (:name "Created"
+                     :formatter srht--format-date
+                     :width 10)
+                    (:name "Updated"
+                     :formatter srht--format-date
+                     :width 10))
+         :objects (plist-get repositories (intern instance))
+         :getter (lambda (object column vtable)
+                   (pcase (srht--vtable-colum vtable column)
+                     ("Name" (plist-get object :name))
+                     ("Visibility" (plist-get object :visibility))
+                     ("Created" (plist-get object :created))
+                     ("Updated" (plist-get object :updated))))
+         :separator-width 5
+         :actions actions
+         :keymap (srht--define-keymap
+                   "q" #'kill-current-buffer
+                   "n" #'next-line
+                   "p" #'previous-line)))
       (read-only-mode)
       (hl-line-mode))
     (switch-to-buffer buffer)))
