@@ -42,6 +42,7 @@ subsequent request, you'll get the next page.")
     :fields
     (canonicalName
      (:type repositories
+      :arguments (:filter (:count 30))
       :fields
       (cursor
        (:type results
@@ -50,10 +51,12 @@ subsequent request, you'll get the next page.")
 (defun srht-git--gql-next-query (cursor)
   "Created next query from CURSOR."
   (pcase-let* ((plist (seq-copy srht-git-gql-base-query))
-               ((map (:fields (seq n lst))) plist))
+               ((map (:fields (seq n lst))) plist)
+               (args (plist-get lst :arguments)))
     (plist-put
      plist
-     :fields `(,n ,(plist-put lst :arguments `(:cursor ,cursor))))))
+     :fields `(,n ,(plist-put
+                    lst :arguments (plist-put args :cursor cursor))))))
 
 (cl-defun srht-git-request (instance query &optional (then 'sync))
   "Request git.INSTANCE.
