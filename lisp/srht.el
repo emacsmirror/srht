@@ -8,7 +8,7 @@
 ;; Package-Version: 0.3
 ;; Homepage: https://sr.ht/~akagi/srht.el/
 ;; Keywords: comm
-;; Package-Requires: ((emacs "27.1") (plz "0.7"))
+;; Package-Requires: ((emacs "27.1") (plz "0.7") (transient "0.4.3"))
 
 ;; This file is part of GNU Emacs.
 
