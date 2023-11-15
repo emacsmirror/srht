@@ -28,6 +28,19 @@
 (declare-function json-encode "json" (object))
 (declare-function map-apply "map")
 
+(defsubst srht-gql--kw->str (kw)
+  (substring (symbol-name kw) 1))
+
+(defun srht-gql--serialize-plist (f plist)
+  (format
+   "{%s}"
+   (mapconcat
+    (lambda (el)
+      (pcase el
+        ((pred keywordp) (concat (srht-gql--kw->str el) ": "))
+        (_ (funcall f el))))
+    plist " ")))
+
 (defun srht-gql--string (val)
   (pcase val
     ((pred symbolp)
@@ -35,15 +48,19 @@
     ((pred integerp)
      (number-to-string val))
     ((pred stringp)
-     (json-encode val))))
+     (json-encode val))
+    ((pred plistp)
+     (srht-gql--serialize-plist #'srht-gql--string val))))
 
 (defun srht-gql--string-join (plist)
-  (let ((lst (map-apply (lambda (kw val)
-                          (if val
-                              (concat (substring (symbol-name kw) 1) ": "
-                                      (srht-gql--string val))
-                            ""))
-                        plist)))
+  (let ((lst (remove
+              ""
+              (map-apply (lambda (kw val)
+                           (if val
+                               (concat (srht-gql--kw->str kw) ": "
+                                       (srht-gql--string val))
+                             ""))
+                         plist))))
     (mapconcat #'identity lst ", ")))
 
 (defun srht-gql--serialize-args (args)
@@ -52,7 +69,7 @@
     (format "(%s)" (srht-gql--string-join args))))
 
 (defun srht-gql--serialize-fields (lst)
-  "Serialize all type fields from the LST."
+  "Serialize fields from the LST."
   (let* ((type (plist-get lst :type))
          (args (plist-get lst :arguments))
          (fields (if type (plist-get lst :fields) lst)))
@@ -78,7 +95,8 @@
   (json-encode `(("query" . ,(srht-gql-serialize base-query)))))
 
 (defun srht-gql-mutation (base-query)
-  (json-encode `(("mutation" . ,(srht-gql-serialize base-query)))))
+  (json-encode
+   `(("query" . ,(concat "mutation" (srht-gql-serialize base-query))))))
 
 (provide 'srht-gql)
 ;;; srht-gql.el ends here
