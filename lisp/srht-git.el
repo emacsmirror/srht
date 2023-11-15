@@ -149,9 +149,11 @@ INITIAL-INPUT, HISTORY (see `read-from-minibuffer')."
     :prompt "Git repository name: "
     :reader srht-git--read-non-empty)
    ("v" "visibility" "visibility="
-    :choices (public unlisted private)
     :always-read t
-    :allow-empty nil)
+    :allow-empty nil
+    :prompt "Visibility: "
+    :reader (lambda (prompt _initial-input _history)
+              (srht-read-visibility prompt)))
    ("d" "description" "description="
     :always-read t
     :prompt "Repository description (markdown): ")
@@ -221,24 +223,27 @@ the :input argument when making changes to the repository."
       :description ,description
       ,@name-plist)))
 
+(defun srht-git--repoinput-read ()
+  "Read a strings from the minibuffer."
+  (list (read-string "Repository new name (omit to leave them unchanged): "
+                     nil 'srht-git-repo-name-history)
+        (srht-read-visibility "Visibility: ")
+        (read-string "Repository description (markdown): ")))
+
 ;;;###autoload
-(defun srht-git-repo-update (instance repo-name new-name visibility description)
+(defun srht-git-repo-update (instance repo-name)
   "Update the REPO-NAME repository from the INSTANCE instance.
 Set VISIBILITY, NEW-NAME and DESCRIPTION."
   (interactive
-   (let* ((inst (srht-read-instance "Instance: "))
-          (name (srht-git--select-repo inst)))
-     (list inst
-           name
-           (read-string "Repository new name: " nil
-                        'srht-git-repo-name-history)
-           (srht-read-visibility "Visibility: ")
-           (read-string "Repository description (markdown): "))))
-  (when (yes-or-no-p (format "Update %s repository?" repo-name))
-    (let* ((repo (srht-git--find-repo instance repo-name))
-           (id (plist-get repo :id))
-           (repoinput (srht-git--repoinput
-                        repo-name new-name visibility description)))
+   (let ((inst (srht-read-instance "Instance: ")))
+     (list inst (srht-git--select-repo inst))))
+  (pcase-let* ((repo (srht-git--find-repo instance repo-name))
+               (id (plist-get repo :id))
+               ((seq new-name visibility description)
+                (srht-git--repoinput-read))
+               (repoinput (srht-git--repoinput
+                            repo-name new-name visibility description)))
+    (when (yes-or-no-p (format "Update %s repository?" repo-name))
       (srht-git-request instance
         (srht-gql-mutation
          `(:query updateRepository
@@ -277,7 +282,10 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
     (error "Vtable required"))
   (srht--view instance srht-git-repositories
     `("d" (lambda (obj)
-            (srht-git-repo-delete ,instance (plist-get obj :name))))))
+            (srht-git-repo-delete ,instance (plist-get obj :name)))
+      "u" (lambda (obj)
+            (srht-git-repo-update ,instance (plist-get obj :name)))
+      "c" (lambda (_obj) (srht-git-repo-create)))))
 
 ;;;;;;;;;;;;;;;;;;;LEGACY API;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
