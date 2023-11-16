@@ -37,26 +37,22 @@
 If you pass this value into repositories(cursor:\"...\") in a
 subsequent request, you'll get the next page.")
 
-(defconst srht-git-gql-base-query
-  '(:query me
-    :fields
-    (canonicalName
-     (:type repositories
-      :arguments (:filter (:count 30))
+(defun srht-git-repositories-next (cursor)
+  "Next query from CURSOR."
+  (let ((repositories `(:type repositories
+                        :arguments (:filter (:count 30) :cursor ,cursor)
+                        :fields
+                        (cursor
+                         (:type results
+                          :fields (id
+                                   name
+                                   description
+                                   created
+                                   updated
+                                   visibility))))))
+    `(:query me
       :fields
-      (cursor
-       (:type results
-        :fields(id name description created updated visibility)))))))
-
-(defun srht-git--gql-next-query (cursor)
-  "Created next query from CURSOR."
-  (pcase-let* ((plist (seq-copy srht-git-gql-base-query))
-               ((map (:fields (seq n lst))) plist)
-               (args (plist-get lst :arguments)))
-    (plist-put
-     plist
-     :fields `(,n ,(plist-put
-                    lst :arguments (plist-put args :cursor cursor))))))
+      (canonicalName ,repositories))))
 
 (cl-defun srht-git-request (instance query &optional (then 'sync))
   "Request git.INSTANCE.
@@ -75,7 +71,7 @@ CALLBACK is called when the object has been completely retrieved.
 Or CALLBACK may be `sync' to make a synchronous request."
   (declare (indent 1))
   (named-let loop ((query (srht-gql-query
-                           (srht-git--gql-next-query nil)))
+                           (srht-git-repositories-next nil)))
                    (cursor "") (ac nil))
     (if cursor
         (pcase-let (((map (:data
@@ -84,7 +80,7 @@ Or CALLBACK may be `sync' to make a synchronous request."
                                        (map (:cursor pointer)
                                             (:results results))))))))
                      (srht-git-request instance query)))
-          (loop (srht-gql-query (srht-git--gql-next-query pointer))
+          (loop (srht-gql-query (srht-git-repositories-next pointer))
                 pointer (append results ac)))
       ac)))
 
