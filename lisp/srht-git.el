@@ -137,6 +137,22 @@ INITIAL-INPUT, HISTORY (see `read-from-minibuffer')."
         (message "Please enter non-empty!")
         (sit-for 1)))))
 
+(defun srht-git--read-url (prompt initial-input history)
+  "Read URL string from the minibuffer, prompting with string PROMPT.
+INITIAL-INPUT, HISTORY (see `read-from-minibuffer')."
+  (save-match-data
+    (cl-block nil
+      (while t
+        (let ((str (read-from-minibuffer prompt initial-input nil nil history))
+              (regex (rx (group "http"
+                                (zero-or-one "s")
+                                "://")
+                         (group (* alphanumeric)))))
+          (when (eq 0 (string-match regex str))
+            (cl-return str)))
+        (message "Please enter url with https://")
+        (sit-for 1)))))
+
 ;;;###autoload (autoload 'srht-git-repo-create "srht-git" nil t)
 (transient-define-prefix srht-git-repo-create ()
   "Prefix that just shows off many typical infix types."
@@ -163,8 +179,8 @@ INITIAL-INPUT, HISTORY (see `read-from-minibuffer')."
    ("u" "clone URL" "cloneUrl="
     :always-read t
     :prompt "Repository will be cloned from the given URL: "
-    ;; TODO: add custom reader
-    )]
+    :reader srht-git--read-url)
+   ]
   ["New repository"
    ("c" "create repository" srht-git-repo-create0)])
 
