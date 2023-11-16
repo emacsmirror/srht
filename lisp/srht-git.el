@@ -74,12 +74,11 @@ Or CALLBACK may be `sync' to make a synchronous request."
                            (srht-git-repositories-next nil)))
                    (cursor "") (ac nil))
     (if cursor
-        (pcase-let (((map (:data
-                           (map (:me
-                                 (map (:repositories
-                                       (map (:cursor pointer)
-                                            (:results results))))))))
-                     (srht-git-request instance query)))
+        (let* ((resp (srht-git-request instance query))
+               (results (srht-plist-get resp
+                          :data :me :repositories :results))
+               (pointer (srht-plist-get resp
+                          :data :me :repositories :cursor)))
           (loop (srht-gql-query (srht-git-repositories-next pointer))
                 pointer (append results ac)))
       ac)))
@@ -187,7 +186,7 @@ INITIAL-INPUT, HISTORY (see `read-from-minibuffer')."
 (transient-define-suffix srht-git-repo-create0 ()
   "Create the NAME repository on an instance with the instance name INSTANCE.
 Set VISIBILITY and DESCRIPTION."
-  (interactive)
+  (interactive nil nil)
   (let ((instance (srht-git--transient-value "instance="))
         (name (let ((val (srht-git--transient-value "name=")))
                 (if (or (null val) (string-empty-p val))
@@ -288,6 +287,36 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
           (srht-git--message instance
             "Sourcehut %s git repository deleted!" repo-name))))))
 
+(defun srht-git-repository-log (instance repo-name &optional cursor)
+  "Sourcehut INSTANCE repository REPO-NAME log.
+If you pass value of CURSOR into repositories(cursor:\"...\") in a
+subsequent request, you'll get the next page."
+  (let* ((log `(:type log
+                :arguments (:cursor ,cursor)
+                :fields (cursor
+                         (:type results
+                          :fields (shortId
+                                   message
+                                   (:type author
+                                    :fields (name email)))))))
+         (repository `(:type repository
+                       :arguments (:name ,repo-name)
+                       :fields (id name ,log)
+                       )))
+    (srht-git-request instance
+      (srht-gql-query
+       `(:query me
+         :fields (,repository))))))
+
+;;;###autoload
+(defun srht-git-log (instance repo-name)
+  "Display log of Sourcehut INSTANCE git repositories REPO-NAME."
+  (interactive nil nil)
+  (if-let ((resp (srht-git-repository-log instance repo-name))
+           (log (srht-plist-get resp :data :me :repository :log :results)))
+      (srht--view-log log)
+    (user-error "No log")))
+
 ;;;###autoload
 (defun srht-git-repos-list (instance)
   "Display a list of Sourcehut INSTANCE git repositories."
@@ -300,7 +329,9 @@ Set VISIBILITY, NEW-NAME and DESCRIPTION."
             (srht-git-repo-delete ,instance (plist-get obj :name)))
       "u" (lambda (obj)
             (srht-git-repo-update ,instance (plist-get obj :name)))
-      "c" (lambda (_obj) (srht-git-repo-create)))))
+      "c" (lambda (_obj) (srht-git-repo-create))
+      "l" (lambda (obj)
+            (srht-git-log ,instance (plist-get obj :name))))))
 
 ;;;;;;;;;;;;;;;;;;;LEGACY API;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

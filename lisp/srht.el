@@ -273,11 +273,19 @@ PROMPT is a string to prompt with; normally it ends in a colon and a space."
 PROMPT, INITIAL-INPUT see `completing-read' doc."
   (completing-read prompt '("private" "public" "unlisted") nil t initial-input))
 
+(defun srht-plist-get (plist &rest kw-list)
+  "Extract a value for last keyword in KW-LIST from a property list.
+PLIST nested property list."
+  (declare (indent 1))
+  (seq-reduce (lambda (acc kw)
+                (setq acc (plist-get acc kw)))
+              kw-list plist))
+
 (defun srht-results-get (instance plist)
   "Extract the value for the :results property.
 For the existing PLIST for the INSTANCE instance name."
   (declare (indent 1))
-  (plist-get (plist-get plist (intern instance)) :results))
+  (srht-plist-get plist (intern instance) :results))
 
 (defmacro srht-put (plist instance val)
   "Change value in PLIST of INSTANCE to VAL if is not nil."
@@ -323,40 +331,75 @@ Return string in format DAY.MONTH.YEAR."
     (lambda (&rest _args)
       (error "Require define-keymap"))))
 
+(cl-defun srht--vtable (&key buffer
+                             columns
+                             objects
+                             getter
+                             separator-width
+                             actions)
+  ""
+  (let ((buff (get-buffer-create buffer)))
+    (with-current-buffer buff
+      (let ((inhibit-read-only t))
+        (srht--make-vtable
+         :columns columns
+         :objects objects
+         :getter getter
+         :separator-width separator-width
+         :keymap (srht--define-keymap
+                   "q" #'kill-current-buffer
+                   "n" #'next-line
+                   "p" #'previous-line)
+         :actions actions))
+      (read-only-mode)
+      (hl-line-mode))
+    (switch-to-buffer buffer)))
+
 (defun srht--view (instance repositories &optional actions)
   "Display a list of Sourcehut INSTANCE REPOSITORIES.
 ACTIONS are simple commands that will be called with the
 object under point."
   (declare (indent 2))
-  (let ((buffer (get-buffer-create "*Sourcehut repositories*")))
-    (with-current-buffer buffer
-      (let ((inhibit-read-only t))
-        (srht--make-vtable
-         :columns '("Name"
-                    (:name "Visibility"
-                     :formatter (lambda (val) (when val (downcase val))))
-                    (:name "Created"
-                     :formatter srht--format-date
-                     :width 10)
-                    (:name "Updated"
-                     :formatter srht--format-date
-                     :width 10))
-         :objects (plist-get repositories (intern instance))
-         :getter (lambda (object column vtable)
-                   (pcase (srht--vtable-colum vtable column)
-                     ("Name" (plist-get object :name))
-                     ("Visibility" (plist-get object :visibility))
-                     ("Created" (plist-get object :created))
-                     ("Updated" (plist-get object :updated))))
-         :separator-width 5
-         :actions actions
-         :keymap (srht--define-keymap
-                   "q" #'kill-current-buffer
-                   "n" #'next-line
-                   "p" #'previous-line)))
-      (read-only-mode)
-      (hl-line-mode))
-    (switch-to-buffer buffer)))
+  (srht--vtable
+   :buffer "*Sourcehut repositories*"
+   :columns '("Name"
+              (:name "Visibility"
+               :formatter (lambda (val) (when val (downcase val))))
+              (:name "Created"
+               :formatter srht--format-date
+               :width 10)
+              (:name "Updated"
+               :formatter srht--format-date
+               :width 10))
+   :objects (plist-get repositories (intern instance))
+   :getter (lambda (object column vtable)
+             (pcase (srht--vtable-colum vtable column)
+               ("Name" (plist-get object :name))
+               ("Visibility" (plist-get object :visibility))
+               ("Created" (plist-get object :created))
+               ("Updated" (plist-get object :updated))))
+   :separator-width 5
+   :actions actions))
+
+(defun srht--view-log (log &optional actions)
+  ""
+  (srht--vtable
+   :buffer "*Sourcehut log*"
+   :columns '("ShortId"
+              (:name "Message"
+               :width 40)
+              (:name "Author name")
+              (:name "Author email"))
+   :objects log
+   :getter (lambda (object column vtable)
+             (pcase (srht--vtable-colum vtable column)
+               ("ShortId" (plist-get object :shortId))
+               ("Message" (replace-regexp-in-string
+                           "\n" "" (plist-get object :message)))
+               ("Author name" (srht-plist-get object :author :name))
+               ("Author email" (srht-plist-get object :author :email))))
+   :separator-width 1
+   :actions actions))
 
 (provide 'srht)
 ;;; srht.el ends here
