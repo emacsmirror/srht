@@ -193,7 +193,7 @@ Set VISIBILITY and DESCRIPTION."
          :arguments (:name ,name
                      :visibility ,visibility
                      :description ,description
-                     :cloneurl ,cloneurl)
+                     :cloneUrl ,cloneurl)
          :fields (id)))
       (lambda (_r)
         (let* ((username (string-trim-left srht-username "~"))
