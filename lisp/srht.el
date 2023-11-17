@@ -5,7 +5,7 @@
 ;; Author: Aleksandr Vityazev <avityazev@posteo.org>
 ;; Maintainer: Aleksandr Vityazev <avityazev@posteo.org>
 ;; Keywords: comm vc
-;; Package-Version: 0.3
+;; Package-Version: 0.4
 ;; Homepage: https://sr.ht/~akagi/srht.el/
 ;; Keywords: comm
 ;; Package-Requires: ((emacs "27.1") (plz "0.7") (transient "0.4.3"))
@@ -66,7 +66,7 @@ It is necessary to use Oauth personal token not Oauth2."
 (defun srht-token (host)
   "Lookup variable `srht-token' if needed and return it.
 If variable `srht-token' is nil or cannot be looked up or is empty, signal
-an error."
+an error.  HOST - DNS name of the service."
   (if srht-token
       srht-token
     (let ((token (when-let ((f (plist-get
@@ -337,7 +337,9 @@ Return string in format DAY.MONTH.YEAR."
                              getter
                              separator-width
                              actions)
-  ""
+  "Create and inster a vtable to BUFFER.
+After that display BUFFER in the window.
+COLUMNS OBJECTS GETTER SEPARATOR-WIDTH ACTIONS (see `make-vtable')."
   (let ((buff (get-buffer-create buffer)))
     (with-current-buffer buff
       (let ((inhibit-read-only t))
@@ -382,7 +384,9 @@ object under point."
    :actions actions))
 
 (defun srht--view-log (log &optional actions)
-  ""
+  "Display repository LOG.
+ACTIONS are simple commands that will be called with the
+object under point."
   (srht--vtable
    :buffer "*Sourcehut log*"
    :columns '("ShortId"
